@@ -1,0 +1,197 @@
+import streamlit as st
+import pandas as pd
+from datetime import datetime, timedelta
+import time
+
+# Configure page
+st.set_page_config(
+    page_title="Stock Screener",
+    page_icon="📈",
+    layout="wide"
+)
+
+# Title and description
+st.title("📈 Stock Screener - Buy Signal Generator")
+st.markdown("Select a date to run screener conditions and identify stocks with buy signals.")
+
+# Sidebar for date selection
+st.sidebar.header("Date Selection")
+
+# Generate date options for last 1 week
+today = datetime.now().date()
+date_options = []
+for i in range(8):  # Today + 7 days back
+    date_options.append(today - timedelta(days=i))
+
+# Date selection methods
+date_method = st.sidebar.radio(
+    "Choose date selection method:",
+    ["Select from dropdown", "Enter manually"]
+)
+
+selected_date = None
+
+if date_method == "Select from dropdown":
+    selected_date = st.sidebar.selectbox(
+        "Select Date:",
+        date_options,
+        format_func=lambda x: x.strftime("%Y-%m-%d (%A)")
+    )
+else:
+    # Manual date input
+    date_input = st.sidebar.text_input(
+        "Enter Date (YYYY-MM-DD):",
+        value=today.strftime("%Y-%m-%d"),
+        help="Format: YYYY-MM-DD (e.g., 2024-01-15)"
+    )
+    
+    try:
+        selected_date = datetime.strptime(date_input, "%Y-%m-%d").date()
+    except ValueError:
+        st.sidebar.error("Invalid date format. Please use YYYY-MM-DD format.")
+        selected_date = None
+
+# Display selected date
+if selected_date:
+    st.sidebar.success(f"Selected Date: {selected_date.strftime('%Y-%m-%d')}")
+
+# Main content area
+col1, col2 = st.columns([1, 2])
+
+with col1:
+    st.subheader("Screener Parameters")
+    
+    # Additional parameters (you can customize these based on your screener)
+    st.write("**Current Settings:**")
+    st.info(f"📅 Date: {selected_date.strftime('%Y-%m-%d') if selected_date else 'Not selected'}")
+    
+    # Placeholder for additional screener parameters
+    st.write("**Screener Conditions:**")
+    st.write("• Volume > Average Volume")
+    st.write("• Price > Moving Average")
+    st.write("• RSI conditions")
+    st.write("• Custom technical indicators")
+
+with col2:
+    st.subheader("Screener Results")
+    
+    # Submit button
+    if st.button("🔍 Run Screener", type="primary", disabled=not selected_date):
+        if selected_date:
+            # Show loading spinner
+            with st.spinner("Running screener conditions..."):
+                time.sleep(2)  # Simulate processing time
+                
+                # TODO: Replace this section with your actual screener code
+                # This is where you'll integrate your Python screener code
+                
+                # Placeholder function call (replace with your actual function)
+                def run_screener(date):
+                    """
+                    This is a placeholder function.
+                    Replace this with your actual screener code.
+                    """
+                    # Sample data - replace with your actual screener results
+                    sample_stocks = [
+                        {"Stock": "RELIANCE", "Price": 2850.50, "Signal": "BUY", "Strength": "Strong"},
+                        {"Stock": "TCS", "Price": 3720.25, "Signal": "BUY", "Strength": "Medium"},
+                        {"Stock": "INFY", "Price": 1580.75, "Signal": "BUY", "Strength": "Strong"},
+                        {"Stock": "HDFC", "Price": 2650.00, "Signal": "BUY", "Strength": "Weak"},
+                        {"Stock": "ICICIBANK", "Price": 950.30, "Signal": "BUY", "Strength": "Medium"},
+                    ]
+                    return sample_stocks
+                
+                # Run your screener function
+                screener_results = run_screener(selected_date)
+                
+                if screener_results:
+                    st.success(f"✅ Found {len(screener_results)} stocks with buy signals!")
+                    
+                    # Convert to DataFrame for better display
+                    df = pd.DataFrame(screener_results)
+                    
+                    # Display results with highlighting
+                    st.markdown("### 🎯 Stocks with Buy Signals")
+                    
+                    # Create colored boxes for each stock
+                    for idx, stock in enumerate(screener_results):
+                        col_a, col_b, col_c, col_d = st.columns([2, 1, 1, 1])
+                        
+                        with col_a:
+                            if stock["Strength"] == "Strong":
+                                st.success(f"**{stock['Stock']}** 🚀")
+                            elif stock["Strength"] == "Medium":
+                                st.warning(f"**{stock['Stock']}** ⚡")
+                            else:
+                                st.info(f"**{stock['Stock']}** 📊")
+                        
+                        with col_b:
+                            st.write(f"₹{stock['Price']}")
+                        
+                        with col_c:
+                            st.write(f"{stock['Signal']}")
+                        
+                        with col_d:
+                            st.write(f"{stock['Strength']}")
+                    
+                    # Summary statistics
+                    st.markdown("### 📊 Summary")
+                    col_s1, col_s2, col_s3 = st.columns(3)
+                    
+                    with col_s1:
+                        st.metric("Total Signals", len(screener_results))
+                    
+                    with col_s2:
+                        strong_signals = len([s for s in screener_results if s["Strength"] == "Strong"])
+                        st.metric("Strong Signals", strong_signals)
+                    
+                    with col_s3:
+                        avg_price = sum([s["Price"] for s in screener_results]) / len(screener_results)
+                        st.metric("Avg Price", f"₹{avg_price:.2f}")
+                    
+                    # Downloadable results
+                    st.markdown("### 📥 Download Results")
+                    csv = df.to_csv(index=False)
+                    st.download_button(
+                        label="Download CSV",
+                        data=csv,
+                        file_name=f"screener_results_{selected_date.strftime('%Y-%m-%d')}.csv",
+                        mime="text/csv"
+                    )
+                    
+                else:
+                    st.warning("No stocks found matching the screener conditions.")
+        else:
+            st.error("Please select a valid date first.")
+
+# Footer
+st.markdown("---")
+st.markdown("""
+**Instructions:**
+1. Select a date from the dropdown or enter manually
+2. Click 'Run Screener' to execute the screening conditions
+3. View highlighted stocks with buy signals
+4. Download results as CSV if needed
+
+**Note:** Replace the placeholder `run_screener()` function with your actual screener code.
+""")
+
+# Integration instructions in expandable section
+with st.expander("🔧 Integration Instructions"):
+    st.markdown("""
+    **To integrate your screener code:**
+    
+    1. Replace the `run_screener(date)` function with your actual screening logic
+    2. Your function should accept a date parameter and return a list of dictionaries
+    3. Each dictionary should contain stock information like:
+       ```python
+       {
+           "Stock": "SYMBOL",
+           "Price": 123.45,
+           "Signal": "BUY",
+           "Strength": "Strong/Medium/Weak"
+       }
+       ```
+    4. Add any additional parameters your screener needs in the sidebar
+    5. Customize the display format as needed
+    """)
