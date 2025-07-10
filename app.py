@@ -311,9 +311,12 @@ else:
         selected_date = None
 
 # Screener parameters
-st.sidebar.subheader("Range Filter Parameters")
-sampling_period = st.sidebar.slider("Sampling Period", 10, 200, 100)
-range_multiplier = st.sidebar.slider("Range Multiplier", 1.0, 5.0, 3.0, 0.1)
+# st.sidebar.subheader("Range Filter Parameters")
+# sampling_period = st.sidebar.slider("Sampling Period", 10, 200, 100)
+# range_multiplier = st.sidebar.slider("Range Multiplier", 1.0, 5.0, 3.0, 0.1)
+
+sampling_period=100
+range_multiplier=3.0
 
 # Display selected date
 if selected_date:
