@@ -206,6 +206,7 @@ def get_multi_stock_buy_signals(df, stock_col='stock', date_col='date', source_c
 def get_all_records(table_name, page_size=1000):
     all_records = []
     offset = 0
+    supabase = init_supabase()
     
     while True:
         response = supabase.table(table_name).select('*').range(offset, offset + page_size - 1).execute()
@@ -235,6 +236,40 @@ def load_stock_data():
     except Exception as e:
         st.error(f"Error loading data from Supabase: {e}")
         return pd.DataFrame()
+
+def get_data_stats(df):
+    """Get statistics about the loaded data"""
+    if df.empty:
+        return None
+    
+    stats = {}
+    
+    # Total count
+    stats['total_records'] = len(df)
+    
+    # Unique stocks
+    if 'stock' in df.columns:
+        stats['unique_stocks'] = df['stock'].nunique()
+    else:
+        stats['unique_stocks'] = 0
+    
+    # Latest date data available
+    if 'date' in df.columns:
+        df_temp = df.copy()
+        df_temp['date'] = pd.to_datetime(df_temp['date'])
+        stats['latest_date'] = df_temp['date'].max()
+    else:
+        stats['latest_date'] = None
+    
+    # Latest created date (assuming there's a created_at column)
+    if 'created_at' in df.columns:
+        df_temp = df.copy()
+        df_temp['created_at'] = pd.to_datetime(df_temp['created_at'])
+        stats['latest_created'] = df_temp['created_at'].max()
+    else:
+        stats['latest_created'] = None
+    
+    return stats
 
 def run_screener(selected_date, sampling_period=100, range_multiplier=3.0):
     """
@@ -292,6 +327,10 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0):
 # Title and description
 st.title("📈 Stock Screener - Range Filter Buy Signals")
 st.markdown("Select a date to run the Range Filter screener and identify stocks with buy signals.")
+
+# Load data once for stats
+multi_stock_df = load_stock_data()
+data_stats = get_data_stats(multi_stock_df)
 
 # Sidebar for date selection and parameters
 st.sidebar.header("Screener Configuration")
@@ -352,6 +391,34 @@ with col1:
     st.info(f"📅 Date: {selected_date.strftime('%Y-%m-%d') if selected_date else 'Not selected'}")
     st.info(f"📊 Sampling Period: {sampling_period}")
     st.info(f"🎯 Range Multiplier: {range_multiplier}")
+    
+    # Data Statistics Section
+    st.subheader("📊 Data Statistics")
+    
+    if data_stats:
+        st.write("**Dataset Overview:**")
+        
+        # Total records
+        st.metric("Total Records", f"{data_stats['total_records']:,}")
+        
+        # Unique stocks
+        st.metric("Unique Stocks", f"{data_stats['unique_stocks']:,}")
+        
+        # Latest date available
+        if data_stats['latest_date']:
+            latest_date_str = data_stats['latest_date'].strftime('%Y-%m-%d')
+            st.metric("Latest Date", latest_date_str)
+        else:
+            st.metric("Latest Date", "N/A")
+        
+        # Latest created date
+        if data_stats['latest_created']:
+            latest_created_str = data_stats['latest_created'].strftime('%Y-%m-%d %H:%M')
+            st.metric("Latest Created", latest_created_str)
+        else:
+            st.metric("Latest Created", "N/A")
+    else:
+        st.warning("No data loaded or available")
     
     st.write("**Range Filter Conditions:**")
     st.write("• Price above Range Filter")
