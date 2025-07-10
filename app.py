@@ -202,14 +202,34 @@ def get_multi_stock_buy_signals(df, stock_col='stock', date_col='date', source_c
             return combined_df
     else:
         return pd.DataFrame()
+    
+def get_all_records(table_name, page_size=1000):
+    all_records = []
+    offset = 0
+    
+    while True:
+        response = supabase.table(table_name).select('*').range(offset, offset + page_size - 1).execute()
+        
+        if not response.data:
+            break
+            
+        all_records.extend(response.data)
+        offset += page_size
+        
+        # Break if we got fewer records than requested (last page)
+        if len(response.data) < page_size:
+            break
+    
+    return all_records
+
 
 @st.cache_data
 def load_stock_data():
     """Load stock data from Supabase"""
     try:
         supabase = init_supabase()
-        response = supabase.table('histstockdata').select('*').execute()
-        data = response.data
+        # Usage
+        data = get_all_records('histstockdata')
         multi_stock_df = pd.DataFrame(data)
         return multi_stock_df
     except Exception as e:
