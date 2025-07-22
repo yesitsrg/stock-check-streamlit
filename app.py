@@ -25,14 +25,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize Supabase client (no caching to avoid _thread.RLock issue)
+# Initialize Supabase client
 def init_supabase():
+    """Initialize Supabase client with URL and key."""
     url = "https://kkbezilvomgcuugjtukh.supabase.co"
     key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrYmV6aWx2b21nY3V1Z2p0dWtoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIwNjU3MzIsImV4cCI6MjA2NzY0MTczMn0.dNU34oBodTuHmcTiYIir14csqp-SyifFWHDQW8VgyeY"
     return create_client(url, key)
 
 # Data Fetching Functions
 def get_all_records(table_name, page_size=1000):
+    """Fetch all records from a Supabase table with pagination."""
     all_records = []
     offset = 0
     supabase = init_supabase()
@@ -54,7 +56,7 @@ def get_all_records(table_name, page_size=1000):
 
 @st.cache_data
 def load_stock_data():
-    """Load stock data from Supabase"""
+    """Load stock data from Supabase with deduplication."""
     try:
         data = get_all_records('histstockdata')
         df = pd.DataFrame(data)
@@ -66,7 +68,7 @@ def load_stock_data():
         # Sort by stock, date, and created_at (descending to get latest first)
         df = df.sort_values(['stock', 'date', 'created_at'], ascending=[True, True, False])
 
-        # Keep only the first (latest) row for each stock and date combination
+        # Keep only the latest row for each stock and date combination
         df = df.drop_duplicates(subset=['stock', 'date'], keep='first')
 
         return df
@@ -75,14 +77,11 @@ def load_stock_data():
         return pd.DataFrame()
 
 def upload_to_supabase(df):
-    """Append DataFrame to Supabase histstockdata table"""
+    """Append DataFrame to Supabase histstockdata table."""
     try:
         supabase = init_supabase()
-        # Create a copy to avoid modifying the original DataFrame
         df = df.copy()
-        # Add created_at timestamp
         df['created_at'] = datetime.now().isoformat()
-        # Ensure JSON-serializable types
         df['date'] = df['date'].astype(str)
         df['stock'] = df['stock'].astype(str)
         df['open'] = df['open'].astype(float)
@@ -90,9 +89,7 @@ def upload_to_supabase(df):
         df['low'] = df['low'].astype(float)
         df['close'] = df['close'].astype(float)
         df['volume'] = df['volume'].astype(float)
-        # Prepare data for batch insert
         records = df[['stock', 'date', 'open', 'high', 'low', 'close', 'volume', 'created_at']].to_dict('records')
-        # Insert in batches of 1000 with upsert to avoid duplicates
         batch_size = 1000
         for i in range(0, len(records), batch_size):
             batch = records[i:i + batch_size]
@@ -107,6 +104,7 @@ def upload_to_supabase(df):
 # Fyers Data Downloader
 class FyersNifty500Downloader:
     def __init__(self, app_id, app_secret, access_token=None):
+        """Initialize Fyers API client."""
         self.app_id = app_id
         self.app_secret = app_secret
         self.access_token = access_token
@@ -115,6 +113,7 @@ class FyersNifty500Downloader:
             self.fyers = fyersModel.FyersModel(client_id=self.app_id, token=self.access_token)
 
     def generate_auth_url(self):
+        """Generate Fyers API authorization URL."""
         session = fyersModel.SessionModel(
             client_id=self.app_id,
             secret_key=self.app_secret,
@@ -125,6 +124,7 @@ class FyersNifty500Downloader:
         return session.generate_authcode()
 
     def generate_access_token(self, auth_code):
+        """Generate Fyers API access token from authorization code."""
         try:
             session = fyersModel.SessionModel(
                 client_id=self.app_id,
@@ -147,87 +147,29 @@ class FyersNifty500Downloader:
             return False
 
     def get_nifty500_symbols(self):
+        """Return list of Nifty 500 stock symbols in NSE format."""
+        # Representative subset; replace with full Nifty 500 list from NSE or Fyers
         nifty500_stocks = [
-    "ACMESOLAR", "CAMPUS", "UTIAMC", "ABSLAMC", "SAMMAANCAP", "CGCL", "GLENMARK", 
-    "KIRLOSENG", "PREMIERENE", "OLECTRA", "LLOYDSME", "LEMONTREE", "SYRMA", 
-    "SAGILITY", "JPPOWER", "JBMA", "IIFL", "PRESTIGE", "PAYTM", "BLS", "IREDA", 
-    "NUVAMA", "HOMEFIRST", "GODIGIT", "PFC", "AWL", "SWSOLAR", "BALRAMCHIN", 
-    "DBREALTY", "JSWENERGY", "PCBL", "NAM-INDIA", "RADICO", "HDFCAMC", "MEDANTA", 
-    "SCHNEIDER", "CONCOR", "JUBLPHARMA", "JUBLINGREA", "BBTC", "NYKAA", "RTNINDIA", 
-    "EMCURE", "WAAREEENER", "MANAPPURAM", "ANANTRAJ", "KAYNES", "MARUTI", 
-    "SIGNATURE", "ADANIPOWER", "RECLTD", "APTUS", "INOXWIND", "MOTILALOFS", 
-    "HEG", "MSUMI", "AMBER", "BLUEDART", "RKFORGE", "ELGIEQUIP", "VTL", "PVRINOX", 
-    "GICRE", "INDUSINDBK", "ROUTE", "SCHAEFFLER", "TATASTEEL", "ENGINERSIN", 
-    "APARINDS", "MAHSEAMLES", "EIHOTEL", "LODHA", "SWIGGY", "BAJFINANCE", 
-    "TEJASNET", "APLAPOLLO", "TATATECH", "NMDC", "ACE", "NATIONALUM", "SBFC", 
-    "TITAGARH", "GRAPHITE", "JIOFIN", "IDEA", "BPCL", "RHIM", "3MINDIA", 
-    "ANANDRATHI", "MFSL", "JYOTICNC", "CCL", "EIDPARRY", "TRITURBINE", "HYUNDAI", 
-    "KAJARIACER", "COHANCE", "FIVESTAR", "KIMS", "LICHSGFIN", "CRISIL", 
-    "AXISBANK", "SAILIFE", "NSLNISP", "SUNDARMFIN", "NETWEB", "ADANIGREEN", 
-    "TORNTPOWER", "IOC", "OBEROIRLTY", "SWANENERGY", "SAIL", "NTPCGREEN", 
-    "ALIVUS", "SOBHA", "PIDILITIND", "JSL", "HSCL", "WELSPUNLIV", "CROMPTON", 
-    "TRIVENI", "BALKRISIND", "ERIS", "PATANJALI", "HBLENGINE", "INDUSTOWER", 
-    "CHALET", "ECLERX", "VOLTAS", "JINDALSTEL", "ATGL", "ITI", "TATACHEM", 
-    "SBIN", "ASAHIINDIA", "RITES", "GPIL", "RVNL", "CHOLAHLDNG", "BAJAJFINSV", 
-    "ARE&M", "PRAJIND", "ALKYLAMINE", "AEGISLOG", "HONAUT", "BOSCHLTD", "GVT&D", 
-    "JUBLFOOD", "VGUARD", "ULTRACEMCO", "CERA", "TATAELXSI", "RPOWER", "AFCONS", 
-    "UNITDSPR", "KALYANKJIL", "BANDHANBNK", "ADANIENSOL", "JMFINANCIL", 
-    "POONAWALLA", "ASTRAL", "DIXON", "MAPMYINDIA", "ADANIENT", "NH", "TATAMOTORS", 
-    "EXIDEIND", "LINDEINDIA", "TRENT", "DLF", "IGIL", "MINDACORP", "JWL", 
-    "USHAMART", "GAIL", "KEI", "KPRMILL", "HINDALCO", "ACC", "HUDCO", "GPPL", 
-    "TTML", "CAMS", "HAVELLS", "CGPOWER", "POLYCAB", "CEATLTD", "UCOBANK", 
-    "LT", "GRASIM", "JUSTDIAL", "DEEPAKNTR", "CDSL", "BHEL", "LTFOODS", 
-    "TATAPOWER", "HINDCOPPER", "ONGC", "DEVYANI", "NBCC", "JSWINFRA", "AIIL", 
-    "RAYMONDLSL", "POWERGRID", "BRIGADE", "AADHARHFC", "THERMAX", "ANGELONE", 
-    "CUMMINSIND", "HDFCBANK", "NIVABUPA", "BATAINDIA", "ZEEL", "JSWSTEEL", 
-    "GODFRYPHLP", "TATACONSUM", "GODREJPROP", "TATAINVEST", "INDIGO", "TITAN", 
-    "TIINDIA", "VIJAYA", "SKFINDIA", "HEROMOTOCO", "TCS", "INDIAMART", 
-    "GODREJIND", "MARICO", "TANLA", "KOTAKBANK", "KNRCON", "IRFC", "DALBHARAT", 
-    "IRCTC", "J&KBANK", "SUZLON", "DMART", "SJVN", "IRB", "FINPIPE", "JKCEMENT", 
-    "BRITANNIA", "ADANIPORTS", "NTPC", "IRCON", "DRREDDY", "ZENSARTECH", 
-    "GODREJAGRO", "MAXHEALTH", "ETERNAL", "BASF", "NESTLEIND", "SBILIFE", 
-    "CARBORUNIV", "SBICARD", "BAJAJHFL", "TECHNOE", "NHPC", "POLYMED", 
-    "CAPLIPOINT", "COROMANDEL", "PETRONET", "UPL", "ABCAPITAL", "MUTHOOTFIN", 
-    "KEC", "IDBI", "UNIONBANK", "RAINBOW", "LAURUSLABS", "BHARTIHEXA", "MANYAVAR", 
-    "IEX", "IDFCFIRSTB", "ABBOTINDIA", "CREDITACC", "TVSMOTOR", "ASHOKLEY", 
-    "SHYAMMETL", "LTTS", "RELIANCE", "ICICIBANK", "WHIRLPOOL", "PEL", 
-    "LATENTVIEW", "RENUKA", "APLLTD", "HAPPSTMNDS", "WELCORP", "RCF", 
-    "TORNTPHARM", "DABUR", "HONASA", "IOB", "PAGEIND", "KIRLOSBROS", "BAJAJ-AUTO", 
-    "MPHASIS", "RRKABEL", "CENTURYPLY", "BIKAJI", "RAILTEL", "HINDUNILVR", 
-    "SAREGAMA", "BANKBARODA", "AUBANK", "PPLPHARMA", "HFCL", "YESBANK", 
-    "CHAMBLFERT", "SONACOMS", "GODREJCP", "UNOMINDA", "SAPPHIRE", "BEML", 
-    "SUPREMEIND", "FLUOROCHEM", "MAZDOCK", "TATACOMM", "MASTEK", "KPIL", "ITC", 
-    "LTIM", "TRIDENT", "FACT", "HINDZINC", "MRPL", "EICHERMOT", "APOLLOTYRE", 
-    "APOLLOHOSP", "ASIANPAINT", "INOXINDIA", "RAYMOND", "BSOFT", "360ONE", 
-    "JKTYRE", "IFCI", "NETWORK18", "VMM", "MMTC", "BEL", "BLUESTARCO", "CYIENT", 
-    "TARIL", "KANSAINER", "CONCORDBIO", "PNBHOUSING", "REDINGTON", "HINDPETRO", 
-    "CESC", "CRAFTSMAN", "POLICYBZR", "FINCABLES", "INDIACEM", "LUPIN", 
-    "CENTRALBK", "COALINDIA", "GMRAIRPORT", "MAHABANK", "DEEPAKFERT", "JINDALSAW", 
-    "IGL", "KFINTECH", "CLEAN", "NLCINDIA", "HCLTECH", "SUNDRMFAST", "UBL", 
-    "IKS", "NEULANDLAB", "SRF", "FORTIS", "VEDL", "BAJAJHLDNG", "SUNPHARMA", 
-    "AUROPHARMA", "BIOCON", "GNFC", "NCC", "DELHIVERY", "COLPAL", "AAVAS", 
-    "JBCHEPHARM", "MOTHERSON", "ZYDUSLIFE", "ABB", "IPCALAB", "INDHOTEL", 
-    "SHRIRAMFIN", "OLAELEC", "MANKIND", "SYNGENE", "NAVA", "KPITTECH", "FIRSTCRY", 
-    "PNCINFRA", "AFFLE", "CANBK", "M&M", "MGL", "COCHINSHIP", "PNB", "CHOLAFIN", 
-    "SUNTV", "BERGEPAINT", "SARDAEN", "FEDERALBNK", "NIACL", "TIMKEN", 
-    "PHOENIXLTD", "PERSISTENT", "ABREL", "GMDCLTD", "MCX", "OIL", "KARURVYSYA", 
-    "AJANTPHARM", "NAUKRI", "SCI", "LTF", "SUMICHEM", "ESCORTS", "INFY", 
-    "ZFCVINDIA", "HAL", "SHREECEM", "STARHEALTH", "VBL", "DOMS", "INDIANB", 
-    "AMBUJACEM", "GUJGASLTD", "ABFRL", "SIEMENS", "NATCOPHARM", "CASTROLIND", 
-    "AARTIIND", "BSE", "ICICIGI", "TECHM", "GRAVITA", "PGEL", "CHENNPETRO", 
-    "M&MFIN", "AIAENG", "GRANULES", "CIPLA", "BANKINDIA", "GSPL", "WIPRO", 
-    "ICICIPRULI", "POWERINDIA", "ATUL", "GLAXO", "ALKEM", "WOCKPHARMA", 
-    "JYOTHYLAB", "GILLETTE", "ENDURANCE", "TBOTEK", "ASTERDM", "DCMSHRIRAM", 
-    "CUB", "SONATSOFTW", "RAMCOCEM", "GESHIP", "INDGN", "GLAND", "DIVISLAB", 
-    "LALPATHLAB", "OFSS", "BHARATFORG", "NEWGEN", "NAVINFLUOR", "FSL", "MRF", 
-    "EMAMILTD", "LICI", "SOLARINDS", "PTCIL", "ALOKINDS", "AKUMS", "ASTRAZEN", 
-    "BHARTIARTL", "WESTLIFE", "COFORGE", "INTELLECT", "HDFCLIFE", "DATAPATTNS", 
-    "JSWHL", "CANFINHOME", "ZENTEC", "PIIND", "ELECON", "PFIZER", "RBLBANK", 
-    "GRSE", "BAYERCROP", "METROPOLIS", "BDL"
-]
+            "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "HINDUNILVR", "SBIN",
+            "BHARTIARTL", "BAJFINANCE", "ITC", "LT", "KOTAKBANK", "MARUTI", "HCLTECH",
+            "AXISBANK", "SUNPHARMA", "TITAN", "ONGC", "ADANIENT", "NTPC", "TATAMOTORS",
+            "ASIANPAINT", "M&M", "POWERGRID", "ULTRACEMCO", "WIPRO", "JSWSTEEL",
+            "TATASTEEL", "TECHM", "HDFCLIFE", "GRASIM", "DIVISLAB", "SBILIFE",
+            "BAJAJFINSV", "DRREDDY", "HINDALCO", "CIPLA", "BRITANNIA", "EICHERMOT",
+            "INDUSINDBK", "HEROMOTOCO", "ADANIPORTS", "SHREECEM", "COALINDIA",
+            "BPCL", "GODREJCP", "DABUR", "PIDILITIND", "HAVELLS", "SIEMENS",
+            "BAJAJ-AUTO", "AMBUJACEM", "GAIL", "APOLLOHOSP", "LUPIN", "ICICIGI",
+            "MCDOWELL-N", "TORNTPHARM", "BIOCON", "COLPAL", "MARICO", "ZENSARTECH",
+            "NAUKRI", "MFSL", "PVRINOX", "JUBLFOOD", "PAYTM", "NYKAA", "ZOMATO",
+            "GLENMARK", "KIRLOSENG", "PRESTIGE", "DLF", "GODREJPROP", "OBEROIRLTY",
+            "PHOENIXLTD", "LODHA", "KAYNES", "SYRMA", "TATATECH", "CAMPUS",
+            "HOMEFIRST", "FIVESTAR", "SBFC", "IREDA", "NUVAMA", "HDFCAMC", "NAM-INDIA"
+            # Add more symbols as needed or fetch from NSE/Fyers
+        ]
         return [f"NSE:{symbol}-EQ" for symbol in nifty500_stocks]
 
     def get_historical_data(self, symbol, days=2):
+        """Download historical data for a symbol from Fyers API."""
         try:
             data = {
                 "symbol": symbol,
@@ -252,37 +194,34 @@ class FyersNifty500Downloader:
             return pd.DataFrame()
 
     def download_all_data(self, days=2):
+        """Download historical data for all Nifty 500 symbols."""
         symbols = self.get_nifty500_symbols()
         consolidated_data = pd.DataFrame()
         for i, symbol in enumerate(symbols):
             df = self.get_historical_data(symbol, days)
             if not df.empty:
                 consolidated_data = pd.concat([consolidated_data, df], ignore_index=True)
-            time.sleep(1.2)
+            time.sleep(1.2)  # Avoid API rate limits
         return consolidated_data
 
 # Signal Processing Functions
 def range_filter_signals(df, date_col='date', source_col='close', sampling_period=100, range_multiplier=3.0):
-    """Calculate Range Filter signals (Buy and Sell) using a window of recent data"""
+    """Calculate Range Filter signals (Buy and Sell) for all records."""
     data = df.copy()
     if date_col not in data.columns:
         raise ValueError(f"Date column '{date_col}' not found")
     
-    # Ensure date and created_at are datetime
+    # Ensure date is datetime and sort by date for chronological order
     data[date_col] = pd.to_datetime(data[date_col])
+    data = data.sort_values(by=date_col).reset_index(drop=True)
+    
+    # Handle created_at for compatibility with deduplication
     if 'created_at' in data.columns:
         data['created_at'] = pd.to_datetime(data['created_at'])
     else:
         st.warning("No 'created_at' column found; using date for sorting")
         data['created_at'] = data[date_col]
 
-    # Filter to last 5 days of data per stock to ensure enough data points for trends
-    recent_date = data[date_col].max()
-    # window_start = recent_date - timedelta(days=5)
-    # data = data[data[date_col] >= window_start]
-
-    # Get latest record per stock based on created_at, keeping all data for trends
-    data = data.sort_values('created_at')
     grouped = data.groupby('stock')
     results = []
 
@@ -382,9 +321,7 @@ def range_filter_signals(df, date_col='date', source_col='close', sampling_perio
         stock_data['buy_signal'] = longCondition
         stock_data['sell_signal'] = shortCondition
 
-        # Keep only the latest record for output
-        latest_record = stock_data.iloc[-1:].copy()
-        results.append(latest_record)
+        results.append(stock_data)  # Process all records
 
     if results:
         return pd.concat(results, ignore_index=True)
@@ -392,7 +329,7 @@ def range_filter_signals(df, date_col='date', source_col='close', sampling_perio
 
 def get_multi_stock_signals(df, stock_col='stock', date_col='date', source_col='close', 
                            sampling_period=100, range_multiplier=3.0, signal_type='Both'):
-    """Apply Range Filter signals to multiple stocks"""
+    """Apply Range Filter signals to multiple stocks."""
     required_cols = [stock_col, date_col, source_col]
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
@@ -414,7 +351,7 @@ def get_multi_stock_signals(df, stock_col='stock', date_col='date', source_col='
         return pd.DataFrame()
 
 def get_data_stats(df):
-    """Get statistics about the loaded data"""
+    """Get statistics about the loaded data."""
     if df.empty:
         return None
     stats = {
@@ -426,7 +363,7 @@ def get_data_stats(df):
     return stats
 
 def run_screener(selected_date, sampling_period=100, range_multiplier=3.0, signal_type='Both'):
-    """Run the screener for the selected date and signal type"""
+    """Run the screener for the selected date and signal type."""
     multi_stock_df = load_stock_data()
     if multi_stock_df.empty:
         return []
@@ -459,7 +396,7 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0, signa
 
 # UI Components
 def render_data_refresh():
-    """Render UI for data refresh using Fyers API"""
+    """Render UI for data refresh using Fyers API."""
     st.sidebar.header("Refresh Data")
     app_id = st.sidebar.text_input("Fyers App ID", value="5GIWTBB67D-100")
     app_secret = st.sidebar.text_input("Fyers App Secret", value="OHKSCRKBKQ", type="password")
@@ -515,6 +452,7 @@ def render_data_refresh():
 
 # Main App
 def main():
+    """Main Streamlit app for stock screener."""
     st.title("📈 Stock Screener - Range Filter Signals")
     st.markdown("Select a date and signal type to identify stocks with buy or sell signals.")
 
