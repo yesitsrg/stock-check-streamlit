@@ -148,7 +148,6 @@ class FyersNifty500Downloader:
 
     def get_nifty500_symbols(self):
         """Return list of Nifty 500 stock symbols in NSE format."""
-        # Representative subset; replace with full Nifty 500 list from NSE or Fyers
         nifty500_stocks = [
             "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "HINDUNILVR", "SBIN",
             "BHARTIARTL", "BAJFINANCE", "ITC", "LT", "KOTAKBANK", "MARUTI", "HCLTECH",
@@ -164,7 +163,6 @@ class FyersNifty500Downloader:
             "GLENMARK", "KIRLOSENG", "PRESTIGE", "DLF", "GODREJPROP", "OBEROIRLTY",
             "PHOENIXLTD", "LODHA", "KAYNES", "SYRMA", "TATATECH", "CAMPUS",
             "HOMEFIRST", "FIVESTAR", "SBFC", "IREDA", "NUVAMA", "HDFCAMC", "NAM-INDIA"
-            # Add more symbols as needed or fetch from NSE/Fyers
         ]
         return [f"NSE:{symbol}-EQ" for symbol in nifty500_stocks]
 
@@ -201,21 +199,24 @@ class FyersNifty500Downloader:
             df = self.get_historical_data(symbol, days)
             if not df.empty:
                 consolidated_data = pd.concat([consolidated_data, df], ignore_index=True)
-            time.sleep(1.2)  # Avoid API rate limits
+            time.sleep(1.2)
         return consolidated_data
 
 # Signal Processing Functions
-def range_filter_signals(df, date_col='date', source_col='close', sampling_period=100, range_multiplier=3.0):
-    """Calculate Range Filter signals (Buy and Sell) for all records."""
+def range_filter_signals(df, date_col='date', source_col='close', 
+                        sampling_period=100, range_multiplier=3.0,
+                        sampling_period_fast=27, range_multiplier_fast=1.6,
+                        sampling_period_slow=55, range_multiplier_slow=2.0,
+                        sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
+                        signal_method='Range Filter'):
+    """Calculate signals based on selected method (Range Filter, Twin Range Filter, Parabolic SAR, or combinations)."""
     data = df.copy()
     if date_col not in data.columns:
         raise ValueError(f"Date column '{date_col}' not found")
     
-    # Ensure date is datetime and sort by date for chronological order
     data[date_col] = pd.to_datetime(data[date_col])
     data = data.sort_values(by=date_col).reset_index(drop=True)
     
-    # Handle created_at for compatibility with deduplication
     if 'created_at' in data.columns:
         data['created_at'] = pd.to_datetime(data['created_at'])
     else:
@@ -232,8 +233,11 @@ def range_filter_signals(df, date_col='date', source_col='close', sampling_perio
 
         stock_data = stock_data.sort_values(date_col).reset_index(drop=True)
         src = stock_data[source_col].values
+        high = stock_data['high'].values
+        low = stock_data['low'].values
         n = len(src)
 
+        # Existing Range Filter
         def pine_ema(values, period):
             alpha = 2.0 / (period + 1.0)
             result = np.full(len(values), np.nan)
@@ -309,6 +313,111 @@ def range_filter_signals(df, date_col='date', source_col='close', sampling_perio
             longCondition[i] = longCond[i] and CondIni[i-1] == -1
             shortCondition[i] = shortCond[i] and CondIni[i-1] == 1
 
+        # Twin Range Filter
+        if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+            smrng1 = smooth_average_range(src, sampling_period_fast, range_multiplier_fast)
+            smrng2 = smooth_average_range(src, sampling_period_slow, range_multiplier_slow)
+            smrng_twin = (smrng1 + smrng2) / 2
+            filt_twin = range_filter(src, smrng_twin)
+            upward_twin = np.full(n, 0.0)
+            downward_twin = np.full(n, 0.0)
+
+            for i in range(1, n):
+                if filt_twin[i] > filt_twin[i-1]:
+                    upward_twin[i] = upward_twin[i-1] + 1
+                    downward_twin[i] = 0
+                elif filt_twin[i] < filt_twin[i-1]:
+                    downward_twin[i] = downward_twin[i-1] + 1
+                    upward_twin[i] = 0
+                else:
+                    upward_twin[i] = upward_twin[i-1]
+                    downward_twin[i] = downward_twin[i-1]
+
+            hband_twin = filt_twin + smrng_twin
+            lband_twin = filt_twin - smrng_twin
+
+            longCond_twin = np.full(n, False)
+            shortCond_twin = np.full(n, False)
+            for i in range(1, n):
+                longCond_twin[i] = ((src[i] > filt_twin[i] and src[i] > src[i-1] and upward_twin[i] > 0) or
+                                    (src[i] > filt_twin[i] and src[i] < src[i-1] and upward_twin[i] > 0))
+                shortCond_twin[i] = ((src[i] < filt_twin[i] and src[i] < src[i-1] and downward_twin[i] > 0) or
+                                     (src[i] < filt_twin[i] and src[i] > src[i-1] and downward_twin[i] > 0))
+
+            CondIni_twin = np.full(n, 0)
+            for i in range(1, n):
+                if longCond_twin[i]:
+                    CondIni_twin[i] = 1
+                elif shortCond_twin[i]:
+                    CondIni_twin[i] = -1
+                else:
+                    CondIni_twin[i] = CondIni_twin[i-1]
+
+            longCondition_twin = np.full(n, False)
+            shortCondition_twin = np.full(n, False)
+            for i in range(1, n):
+                longCondition_twin[i] = longCond_twin[i] and CondIni_twin[i-1] == -1
+                shortCondition_twin[i] = shortCond_twin[i] and CondIni_twin[i-1] == 1
+        else:
+            longCondition_twin = np.full(n, True)  # Neutral for non-Twin methods
+            shortCondition_twin = np.full(n, True)
+            filt_twin = np.full(n, np.nan)
+            hband_twin = np.full(n, np.nan)
+            lband_twin = np.full(n, np.nan)
+
+        # Parabolic SAR
+        if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+            sar = np.full(n, np.nan)
+            af = sar_start
+            ep = high[0] if src[0] > src[0] else low[0]
+            trend = 1 if src[0] > src[0] else -1
+            sar[0] = low[0] if trend == 1 else high[0]
+
+            for i in range(1, n):
+                if trend == 1:
+                    sar[i] = sar[i-1] + af * (ep - sar[i-1])
+                    if sar[i] > low[i]:
+                        trend = -1
+                        sar[i] = ep
+                        ep = high[i]
+                        af = sar_start
+                    else:
+                        if high[i] > ep:
+                            ep = high[i]
+                            af = min(af + sar_increment, sar_maximum)
+                else:
+                    sar[i] = sar[i-1] + af * (ep - sar[i-1])
+                    if sar[i] < high[i]:
+                        trend = 1
+                        sar[i] = ep
+                        ep = low[i]
+                        af = sar_start
+                    else:
+                        if low[i] < ep:
+                            ep = low[i]
+                            af = min(af + sar_increment, sar_maximum)
+
+            sar_bullish = sar < low
+            sar_bearish = sar > high
+        else:
+            sar_bullish = np.full(n, True)  # Neutral for non-SAR methods
+            sar_bearish = np.full(n, True)
+            sar = np.full(n, np.nan)
+
+        # Combine signals based on method
+        if signal_method == 'Range Filter':
+            buy_signal = longCondition
+            sell_signal = shortCondition
+        elif signal_method == 'Range Filter + Twin Range Filter':
+            buy_signal = longCondition & longCondition_twin
+            sell_signal = shortCondition & shortCondition_twin
+        elif signal_method == 'Range Filter + Parabolic SAR':
+            buy_signal = longCondition & sar_bullish
+            sell_signal = shortCondition & sar_bearish
+        else:  # Range Filter + Twin Range Filter + Parabolic SAR
+            buy_signal = longCondition & longCondition_twin & sar_bullish
+            sell_signal = shortCondition & shortCondition_twin & sar_bearish
+
         stock_data['range_filter'] = filt
         stock_data['smooth_range'] = smrng
         stock_data['upper_band'] = hband
@@ -318,25 +427,40 @@ def range_filter_signals(df, date_col='date', source_col='close', sampling_perio
         stock_data['long_condition'] = longCond
         stock_data['short_condition'] = shortCond
         stock_data['condition_state'] = CondIni
-        stock_data['buy_signal'] = longCondition
-        stock_data['sell_signal'] = shortCondition
+        stock_data['buy_signal'] = buy_signal
+        stock_data['sell_signal'] = sell_signal
+        stock_data['range_filter_twin'] = filt_twin
+        stock_data['upper_band_twin'] = hband_twin
+        stock_data['lower_band_twin'] = lband_twin
+        stock_data['sar_value'] = sar
 
-        results.append(stock_data)  # Process all records
+        results.append(stock_data)
 
     if results:
         return pd.concat(results, ignore_index=True)
     return pd.DataFrame()
 
 def get_multi_stock_signals(df, stock_col='stock', date_col='date', source_col='close', 
-                           sampling_period=100, range_multiplier=3.0, signal_type='Both'):
-    """Apply Range Filter signals to multiple stocks."""
-    required_cols = [stock_col, date_col, source_col]
+                           sampling_period=100, range_multiplier=3.0,
+                           sampling_period_fast=27, range_multiplier_fast=1.6,
+                           sampling_period_slow=55, range_multiplier_slow=2.0,
+                           sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
+                           signal_method='Range Filter', signal_type='Both'):
+    """Apply signals to multiple stocks based on selected method."""
+    required_cols = [stock_col, date_col, source_col, 'high', 'low']
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
         raise ValueError(f"Missing required columns: {missing_cols}")
 
     try:
-        signals = range_filter_signals(df, date_col, source_col, sampling_period, range_multiplier)
+        signals = range_filter_signals(
+            df, date_col, source_col, 
+            sampling_period, range_multiplier,
+            sampling_period_fast, range_multiplier_fast,
+            sampling_period_slow, range_multiplier_slow,
+            sar_start, sar_increment, sar_maximum,
+            signal_method
+        )
         if signals.empty:
             return pd.DataFrame()
 
@@ -362,14 +486,22 @@ def get_data_stats(df):
     }
     return stats
 
-def run_screener(selected_date, sampling_period=100, range_multiplier=3.0, signal_type='Both'):
-    """Run the screener for the selected date and signal type."""
+def run_screener(selected_date, sampling_period=100, range_multiplier=3.0,
+                 sampling_period_fast=27, range_multiplier_fast=1.6,
+                 sampling_period_slow=55, range_multiplier_slow=2.0,
+                 sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
+                 signal_method='Range Filter', signal_type='Both'):
+    """Run the screener for the selected date, signal method, and type."""
     multi_stock_df = load_stock_data()
     if multi_stock_df.empty:
         return []
 
     signals = get_multi_stock_signals(
-        multi_stock_df, sampling_period=sampling_period, range_multiplier=range_multiplier, signal_type=signal_type
+        multi_stock_df, sampling_period=sampling_period, range_multiplier=range_multiplier,
+        sampling_period_fast=sampling_period_fast, range_multiplier_fast=range_multiplier_fast,
+        sampling_period_slow=sampling_period_slow, range_multiplier_slow=range_multiplier_slow,
+        sar_start=sar_start, sar_increment=sar_increment, sar_maximum=sar_maximum,
+        signal_method=signal_method, signal_type=signal_type
     )
     if signals.empty:
         return []
@@ -390,7 +522,11 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0, signa
             "Date": row['date'],
             "Range_Filter": float(row['range_filter']),
             "Upper_Band": float(row['upper_band']),
-            "Lower_Band": float(row['lower_band'])
+            "Lower_Band": float(row['lower_band']),
+            "Range_Filter_Twin": float(row['range_filter_twin']) if not np.isnan(row['range_filter_twin']) else None,
+            "Upper_Band_Twin": float(row['upper_band_twin']) if not np.isnan(row['upper_band_twin']) else None,
+            "Lower_Band_Twin": float(row['lower_band_twin']) if not np.isnan(row['lower_band_twin']) else None,
+            "SAR_Value": float(row['sar_value']) if not np.isnan(row['sar_value']) else None
         })
     return results
 
@@ -438,7 +574,7 @@ def render_data_refresh():
                             progress_bar.progress(100)
                             status_text.success("Data appended successfully!")
                             st.session_state.download_status = "completed"
-                            st.cache_data.clear()  # Clear cache to reload fresh data
+                            st.cache_data.clear()
                         else:
                             status_text.error("Failed to append data to Supabase")
                             st.session_state.download_status = None
@@ -453,8 +589,8 @@ def render_data_refresh():
 # Main App
 def main():
     """Main Streamlit app for stock screener."""
-    st.title("📈 Stock Screener - Range Filter Signals")
-    st.markdown("Select a date and signal type to identify stocks with buy or sell signals.")
+    st.title("📈 Stock Screener - Enhanced Range Filter Signals")
+    st.markdown("Select a date, signal method, and type to identify stocks with buy or sell signals.")
 
     # Sidebar
     st.sidebar.header("Screener Configuration")
@@ -474,9 +610,44 @@ def main():
             st.sidebar.error("Invalid date format. Please use YYYY-MM-DD")
             selected_date = None
 
+    signal_method = st.sidebar.selectbox(
+        "Signal Method", 
+        ["Range Filter", "Range Filter + Twin Range Filter", 
+         "Range Filter + Parabolic SAR", "Range Filter + Twin Range Filter + Parabolic SAR"]
+    )
     signal_type = st.sidebar.selectbox("Signal Type", ["Buy", "Sell", "Both"])
+
+    # Signal method parameters
     sampling_period = 100
     range_multiplier = 3.0
+    st.sidebar.subheader("Indicator Parameters")
+    st.sidebar.write("**Range Filter**")
+    st.sidebar.info(f"Sampling Period: {sampling_period}")
+    st.sidebar.info(f"Range Multiplier: {range_multiplier}")
+
+    if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+        pass
+        # st.sidebar.subheader("Twin Range Filter")
+        # sampling_period_fast = st.sidebar.slider("Fast Sampling Period", 1, 100, 27)
+        # range_multiplier_fast = st.sidebar.slider("Fast Range Multiplier", 0.1, 5.0, 1.6, 0.1)
+        # sampling_period_slow = st.sidebar.slider("Slow Sampling Period", 1, 100, 55)
+        # range_multiplier_slow = st.sidebar.slider("Slow Range Multiplier", 0.1, 5.0, 2.0, 0.1)
+    else:
+        sampling_period_fast = 27
+        range_multiplier_fast = 1.6
+        sampling_period_slow = 55
+        range_multiplier_slow = 2.0
+
+    if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+        pass    
+        # st.sidebar.subheader("Parabolic SAR")
+        # sar_start = st.sidebar.slider("SAR Start", 0.01, 0.1, 0.02, 0.01)
+        # sar_increment = st.sidebar.slider("SAR Increment", 0.01, 0.1, 0.02, 0.01)
+        # sar_maximum = st.sidebar.slider("SAR Maximum", 0.1, 0.5, 0.2, 0.05)
+    else:
+        sar_start = 0.02
+        sar_increment = 0.02
+        sar_maximum = 0.2
 
     if selected_date:
         st.sidebar.success(f"Selected Date: {selected_date.strftime('%Y-%m-%d')}")
@@ -489,9 +660,13 @@ def main():
         st.subheader("Screener Parameters")
         st.write("**Current Settings:**")
         st.info(f"📅 Date: {selected_date.strftime('%Y-%m-%d') if selected_date else 'Not selected'}")
-        st.info(f"📊 Sampling Period: {sampling_period}")
-        st.info(f"🎯 Range Multiplier: {range_multiplier}")
-        st.info(f"📡 Signal Type: {signal_type}")
+        st.info(f"📡 Signal Method: {signal_method}")
+        st.info(f"📊 Signal Type: {signal_type}")
+        st.info(f"**Range Filter:** Sampling Period: {sampling_period}, Range Multiplier: {range_multiplier}")
+        if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+            st.info(f"**Twin Range Filter:** Fast Period: {sampling_period_fast}, Fast Multiplier: {range_multiplier_fast}, Slow Period: {sampling_period_slow}, Slow Multiplier: {range_multiplier_slow}")
+        if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+            st.info(f"**Parabolic SAR:** Start: {sar_start}, Increment: {sar_increment}, Maximum: {sar_maximum}")
 
         st.subheader("📊 Data Statistics")
         multi_stock_df = load_stock_data()
@@ -504,16 +679,25 @@ def main():
         else:
             st.warning("No data loaded or available")
 
-        st.write("**Range Filter Conditions:**")
-        st.write("• Buy: Price above Range Filter, upward trend, previous state downward")
-        st.write("• Sell: Price below Range Filter, downward trend, previous state upward")
+        st.write("**Signal Conditions:**")
+        st.write("• **Range Filter:** Price above/below filter with trend change")
+        if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+            st.write("• **Twin Range Filter:** Combined fast/slow range filter agreement")
+        if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+            st.write("• **Parabolic SAR:** SAR below low (buy) or above high (sell)")
 
     with col2:
         st.subheader("Screener Results")
         if st.button("Run Screener", disabled=not selected_date):
-            with st.spinner("Running Range Filter screener..."):
+            with st.spinner("Running screener..."):
                 try:
-                    screener_results = run_screener(selected_date, sampling_period, range_multiplier, signal_type)
+                    screener_results = run_screener(
+                        selected_date, sampling_period, range_multiplier,
+                        sampling_period_fast, range_multiplier_fast,
+                        sampling_period_slow, range_multiplier_slow,
+                        sar_start, sar_increment, sar_maximum,
+                        signal_method, signal_type
+                    )
                     if screener_results:
                         st.success(f"✅ Found {len(screener_results)} {'signals' if signal_type == 'Both' else signal_type.lower() + ' signals'}!")
                         df = pd.DataFrame(screener_results)
@@ -536,11 +720,17 @@ def main():
                                 st.write(f"{stock['Strength']}")
 
                         st.markdown("### 📋 Detailed Results")
-                        display_df = df[['Stock', 'Price', 'Signal', 'Strength', 'Range_Filter', 'Upper_Band', 'Lower_Band']].copy()
+                        display_df = df[['Stock', 'Price', 'Signal', 'Strength', 'Range_Filter', 
+                                       'Upper_Band', 'Lower_Band', 'Range_Filter_Twin', 
+                                       'Upper_Band_Twin', 'Lower_Band_Twin', 'SAR_Value']].copy()
                         display_df['Price'] = display_df['Price'].round(2)
                         display_df['Range_Filter'] = display_df['Range_Filter'].round(2)
                         display_df['Upper_Band'] = display_df['Upper_Band'].round(2)
                         display_df['Lower_Band'] = display_df['Lower_Band'].round(2)
+                        display_df['Range_Filter_Twin'] = display_df['Range_Filter_Twin'].round(2)
+                        display_df['Upper_Band_Twin'] = display_df['Upper_Band_Twin'].round(2)
+                        display_df['Lower_Band_Twin'] = display_df['Lower_Band_Twin'].round(2)
+                        display_df['SAR_Value'] = display_df['SAR_Value'].round(2)
                         st.dataframe(display_df, use_container_width=True)
 
                         st.markdown("### 📊 Summary")
@@ -559,7 +749,7 @@ def main():
                         st.download_button(
                             label="Download CSV",
                             data=csv,
-                            file_name=f"range_filter_signals_{selected_date.strftime('%Y-%m-%d')}.csv",
+                            file_name=f"signals_{signal_method.replace(' ', '_')}_{selected_date.strftime('%Y-%m-%d')}.csv",
                             mime="text/csv"
                         )
                     else:
@@ -571,16 +761,17 @@ def main():
     st.markdown("""
     **How it works:**
     1. Refresh data using Fyers API credentials if needed
-    2. Select a date and signal type
-    3. Click 'Run Screener' to analyze stocks
-    4. View buy/sell signals with strength indicators
-    5. Download results as CSV
+    2. Select a date, signal method, and type
+    3. Configure indicator parameters
+    4. Click 'Run Screener' to analyze stocks
+    5. View buy/sell signals with strength indicators
+    6. Download results as CSV
 
-    **Range Filter Algorithm:**
-    - Uses EMA-based smoothing for price filtering
-    - Detects trend changes and breakout conditions
-    - Buy: Price crosses above filter after downtrend
-    - Sell: Price crosses below filter after uptrend
+    **Signal Methods:**
+    - **Range Filter:** Trend-following breakout signals
+    - **Twin Range Filter:** Combines fast and slow range filters for confirmation
+    - **Parabolic SAR:** Confirms signals with trend direction
+    - **Combined:** Requires agreement across selected indicators
     """)
 
 if __name__ == "__main__":
