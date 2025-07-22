@@ -8,6 +8,7 @@ from fyers_apiv3 import fyersModel
 import logging
 import os
 import packaging.version
+from urllib.parse import urlparse, parse_qs
 
 # Check Streamlit version compatibility
 if packaging.version.parse(st.__version__) < packaging.version.parse("1.18.0"):
@@ -549,12 +550,34 @@ def render_data_refresh():
 
     if st.session_state.auth_url:
         st.sidebar.markdown(f"[Click here to authorize]({st.session_state.auth_url})")
-        auth_code = st.sidebar.text_input("Enter Authorization Code")
+        redirect_url = st.sidebar.text_input("Paste Redirect URL")
+        auth_code = None
+        if redirect_url:
+            try:
+                parsed_url = urlparse(redirect_url)
+                query_params = parse_qs(parsed_url.query)
+                auth_code = query_params.get('auth_code', [None])[0]
+                if auth_code:
+                    st.sidebar.success("Auth code extracted!")
+                    # st.markdown(
+                    #     f"""
+                    #     <button onclick="navigator.clipboard.writeText('{auth_code}')">
+                    #         Copy Auth Code to Clipboard
+                    #     </button>
+                    #     """,
+                    #     unsafe_allow_html=True
+                    # )
+                else:
+                    st.sidebar.error("No auth code found in URL")
+            except Exception as e:
+                st.sidebar.error(f"Error parsing URL: {e}")
+
+        auth_code_input = st.sidebar.text_input("Enter Authorization Code", value=auth_code or "")
         
-        if st.sidebar.button("Download Data", disabled=not auth_code):
+        if st.sidebar.button("Download Data", disabled=not auth_code_input):
             with st.spinner("Generating access token..."):
                 downloader = FyersNifty500Downloader(app_id, app_secret)
-                if downloader.generate_access_token(auth_code):
+                if downloader.generate_access_token(auth_code_input):
                     st.session_state.access_token = downloader.access_token
                     st.session_state.download_status = "started"
                 else:
@@ -626,12 +649,11 @@ def main():
     st.sidebar.info(f"Range Multiplier: {range_multiplier}")
 
     if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
-        pass
-        # st.sidebar.subheader("Twin Range Filter")
-        # sampling_period_fast = st.sidebar.slider("Fast Sampling Period", 1, 100, 27)
-        # range_multiplier_fast = st.sidebar.slider("Fast Range Multiplier", 0.1, 5.0, 1.6, 0.1)
-        # sampling_period_slow = st.sidebar.slider("Slow Sampling Period", 1, 100, 55)
-        # range_multiplier_slow = st.sidebar.slider("Slow Range Multiplier", 0.1, 5.0, 2.0, 0.1)
+        st.sidebar.subheader("Twin Range Filter")
+        sampling_period_fast = st.sidebar.slider("Fast Sampling Period", 1, 100, 27)
+        range_multiplier_fast = st.sidebar.slider("Fast Range Multiplier", 0.1, 5.0, 1.6, 0.1)
+        sampling_period_slow = st.sidebar.slider("Slow Sampling Period", 1, 100, 55)
+        range_multiplier_slow = st.sidebar.slider("Slow Range Multiplier", 0.1, 5.0, 2.0, 0.1)
     else:
         sampling_period_fast = 27
         range_multiplier_fast = 1.6
@@ -639,11 +661,10 @@ def main():
         range_multiplier_slow = 2.0
 
     if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
-        pass    
-        # st.sidebar.subheader("Parabolic SAR")
-        # sar_start = st.sidebar.slider("SAR Start", 0.01, 0.1, 0.02, 0.01)
-        # sar_increment = st.sidebar.slider("SAR Increment", 0.01, 0.1, 0.02, 0.01)
-        # sar_maximum = st.sidebar.slider("SAR Maximum", 0.1, 0.5, 0.2, 0.05)
+        st.sidebar.subheader("Parabolic SAR")
+        sar_start = st.sidebar.slider("SAR Start", 0.01, 0.1, 0.02, 0.01)
+        sar_increment = st.sidebar.slider("SAR Increment", 0.01, 0.1, 0.02, 0.01)
+        sar_maximum = st.sidebar.slider("SAR Maximum", 0.1, 0.5, 0.2, 0.05)
     else:
         sar_start = 0.02
         sar_increment = 0.02
