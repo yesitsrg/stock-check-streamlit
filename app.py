@@ -393,21 +393,17 @@ def range_filter_signals(df, date_col='date', source_col='close',
                 ema_rising[i] = ema_line[i] > ema_line[i-1]
                 ema_falling[i] = ema_line[i] < ema_line[i-1]
             
-            # Basic crossover signals - Fixed crossover logic
-            basic_buy = np.full(n, False)
-            basic_sell = np.full(n, False)
-            for i in range(1, n):
-                # Correct crossover: current src vs current filt, previous src vs current filt
-                basic_buy[i] = (src[i] > filt[i] and src[i-1] <= filt[i])
-                basic_sell[i] = (src[i] < filt[i] and src[i-1] >= filt[i])
+            # Use the existing Range Filter signals (longCondition/shortCondition) as base
+            # These are the correct "basic_buy" and "basic_sell" equivalents from Pine Script
+            basic_buy = longCondition  # This is the proper Range Filter buy signal
+            basic_sell = shortCondition  # This is the proper Range Filter sell signal
             
-            # Apply EMA signal modes
+            # Apply EMA signal modes to the existing Range Filter signals
             if ema_signal_mode == "Confirmation":
                 rf_buy_signal = basic_buy & price_above_ema & ema_rising
                 rf_sell_signal = basic_sell & price_below_ema & ema_falling
             elif ema_signal_mode == "Trigger":
                 # Trigger mode: EMA crossover with range filter confirmation
-                # Fixed crossover logic - current src vs current ema, previous src vs current ema
                 ema_cross_up = np.full(n, False)
                 ema_cross_down = np.full(n, False)
                 for i in range(1, n):
