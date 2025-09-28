@@ -271,8 +271,9 @@ def range_filter_signals(df, date_col='date', source_col='close',
                         sampling_period_fast=27, range_multiplier_fast=1.6,
                         sampling_period_slow=55, range_multiplier_slow=2.0,
                         sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
+                        ema_length=10, ema_signal_mode='Confirmation',
                         signal_method='Range Filter'):
-    """Calculate signals based on selected method (Range Filter, Twin Range Filter, Parabolic SAR, or combinations)."""
+    """Calculate signals based on selected method."""
     data = df.copy()
     if date_col not in data.columns:
         raise ValueError(f"Date column '{date_col}' not found")
@@ -300,7 +301,7 @@ def range_filter_signals(df, date_col='date', source_col='close',
         low = stock_data['low'].values
         n = len(src)
 
-        # Existing Range Filter
+        # Pine-style EMA function
         def pine_ema(values, period):
             alpha = 2.0 / (period + 1.0)
             result = np.full(len(values), np.nan)
@@ -334,6 +335,7 @@ def range_filter_signals(df, date_col='date', source_col='close',
                     rngfilt[i] = min(prev_filt, current_x + current_r)
             return rngfilt
 
+        # Core Range Filter calculations
         smrng = smooth_average_range(src, sampling_period, range_multiplier)
         filt = range_filter(src, smrng)
         upward = np.full(n, 0.0)
@@ -353,6 +355,7 @@ def range_filter_signals(df, date_col='date', source_col='close',
         hband = filt + smrng
         lband = filt - smrng
 
+        # Basic Range Filter signals
         longCond = np.full(n, False)
         shortCond = np.full(n, False)
         for i in range(1, n):
@@ -376,110 +379,166 @@ def range_filter_signals(df, date_col='date', source_col='close',
             longCondition[i] = longCond[i] and CondIni[i-1] == -1
             shortCondition[i] = shortCond[i] and CondIni[i-1] == 1
 
-        # Twin Range Filter
-        if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
-            smrng1 = smooth_average_range(src, sampling_period_fast, range_multiplier_fast)
-            smrng2 = smooth_average_range(src, sampling_period_slow, range_multiplier_slow)
-            smrng_twin = (smrng1 + smrng2) / 2
-            filt_twin = range_filter(src, smrng_twin)
-            upward_twin = np.full(n, 0.0)
-            downward_twin = np.full(n, 0.0)
-
+        # Optimized Range Filter with EMA
+        if signal_method == 'Optimized Range Filter':
+            ema_line = pine_ema(src, ema_length)
+            
+            # EMA conditions
+            price_above_ema = src > ema_line
+            price_below_ema = src < ema_line
+            ema_rising = np.full(n, False)
+            ema_falling = np.full(n, False)
+            
             for i in range(1, n):
-                if filt_twin[i] > filt_twin[i-1]:
-                    upward_twin[i] = upward_twin[i-1] + 1
-                    downward_twin[i] = 0
-                elif filt_twin[i] < filt_twin[i-1]:
-                    downward_twin[i] = downward_twin[i-1] + 1
-                    upward_twin[i] = 0
-                else:
-                    upward_twin[i] = upward_twin[i-1]
-                    downward_twin[i] = downward_twin[i-1]
-
-            hband_twin = filt_twin + smrng_twin
-            lband_twin = filt_twin - smrng_twin
-
-            longCond_twin = np.full(n, False)
-            shortCond_twin = np.full(n, False)
+                ema_rising[i] = ema_line[i] > ema_line[i-1]
+                ema_falling[i] = ema_line[i] < ema_line[i-1]
+            
+            # Basic crossover signals
+            basic_buy = np.full(n, False)
+            basic_sell = np.full(n, False)
             for i in range(1, n):
-                longCond_twin[i] = ((src[i] > filt_twin[i] and src[i] > src[i-1] and upward_twin[i] > 0) or
-                                    (src[i] > filt_twin[i] and src[i] < src[i-1] and upward_twin[i] > 0))
-                shortCond_twin[i] = ((src[i] < filt_twin[i] and src[i] < src[i-1] and downward_twin[i] > 0) or
-                                     (src[i] < filt_twin[i] and src[i] > src[i-1] and downward_twin[i] > 0))
-
-            CondIni_twin = np.full(n, 0)
-            for i in range(1, n):
-                if longCond_twin[i]:
-                    CondIni_twin[i] = 1
-                elif shortCond_twin[i]:
-                    CondIni_twin[i] = -1
-                else:
-                    CondIni_twin[i] = CondIni_twin[i-1]
-
-            longCondition_twin = np.full(n, False)
-            shortCondition_twin = np.full(n, False)
-            for i in range(1, n):
-                longCondition_twin[i] = longCond_twin[i] and CondIni_twin[i-1] == -1
-                shortCondition_twin[i] = shortCond_twin[i] and CondIni_twin[i-1] == 1
+                # Crossover and crossunder equivalent
+                basic_buy[i] = (src[i] > filt[i] and src[i-1] <= filt[i-1])
+                basic_sell[i] = (src[i] < filt[i] and src[i-1] >= filt[i-1])
+            
+            # Apply EMA signal modes
+            if ema_signal_mode == "Confirmation":
+                rf_buy_signal = basic_buy & price_above_ema & ema_rising
+                rf_sell_signal = basic_sell & price_below_ema & ema_falling
+            elif ema_signal_mode == "Trigger":
+                # Trigger mode: EMA crossover with range filter confirmation
+                ema_cross_up = np.full(n, False)
+                ema_cross_down = np.full(n, False)
+                for i in range(1, n):
+                    ema_cross_up[i] = (src[i] > ema_line[i] and src[i-1] <= ema_line[i-1])
+                    ema_cross_down[i] = (src[i] < ema_line[i] and src[i-1] >= ema_line[i-1])
+                
+                is_bullish = upward > 0
+                is_bearish = downward > 0
+                rf_buy_signal = ema_cross_up & (src > filt) & is_bullish
+                rf_sell_signal = ema_cross_down & (src < filt) & is_bearish
+            else:  # Filter mode
+                rf_buy_signal = basic_buy & price_above_ema
+                rf_sell_signal = basic_sell & price_below_ema
+            
+            buy_signal = rf_buy_signal
+            sell_signal = rf_sell_signal
+            
+            # Store EMA data
+            stock_data['ema_line'] = ema_line
+            stock_data['ema_signal_mode'] = ema_signal_mode
+        
         else:
-            longCondition_twin = np.full(n, True)  # Neutral for non-Twin methods
-            shortCondition_twin = np.full(n, True)
-            filt_twin = np.full(n, np.nan)
-            hband_twin = np.full(n, np.nan)
-            lband_twin = np.full(n, np.nan)
+            # All other existing signal methods remain unchanged
+            
+            # Twin Range Filter
+            if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+                smrng1 = smooth_average_range(src, sampling_period_fast, range_multiplier_fast)
+                smrng2 = smooth_average_range(src, sampling_period_slow, range_multiplier_slow)
+                smrng_twin = (smrng1 + smrng2) / 2
+                filt_twin = range_filter(src, smrng_twin)
+                upward_twin = np.full(n, 0.0)
+                downward_twin = np.full(n, 0.0)
 
-        # Parabolic SAR
-        if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
-            sar = np.full(n, np.nan)
-            af = sar_start
-            ep = high[0] if src[0] > src[0] else low[0]
-            trend = 1 if src[0] > src[0] else -1
-            sar[0] = low[0] if trend == 1 else high[0]
-
-            for i in range(1, n):
-                if trend == 1:
-                    sar[i] = sar[i-1] + af * (ep - sar[i-1])
-                    if sar[i] > low[i]:
-                        trend = -1
-                        sar[i] = ep
-                        ep = high[i]
-                        af = sar_start
+                for i in range(1, n):
+                    if filt_twin[i] > filt_twin[i-1]:
+                        upward_twin[i] = upward_twin[i-1] + 1
+                        downward_twin[i] = 0
+                    elif filt_twin[i] < filt_twin[i-1]:
+                        downward_twin[i] = downward_twin[i-1] + 1
+                        upward_twin[i] = 0
                     else:
-                        if high[i] > ep:
+                        upward_twin[i] = upward_twin[i-1]
+                        downward_twin[i] = downward_twin[i-1]
+
+                hband_twin = filt_twin + smrng_twin
+                lband_twin = filt_twin - smrng_twin
+
+                longCond_twin = np.full(n, False)
+                shortCond_twin = np.full(n, False)
+                for i in range(1, n):
+                    longCond_twin[i] = ((src[i] > filt_twin[i] and src[i] > src[i-1] and upward_twin[i] > 0) or
+                                        (src[i] > filt_twin[i] and src[i] < src[i-1] and upward_twin[i] > 0))
+                    shortCond_twin[i] = ((src[i] < filt_twin[i] and src[i] < src[i-1] and downward_twin[i] > 0) or
+                                         (src[i] < filt_twin[i] and src[i] > src[i-1] and downward_twin[i] > 0))
+
+                CondIni_twin = np.full(n, 0)
+                for i in range(1, n):
+                    if longCond_twin[i]:
+                        CondIni_twin[i] = 1
+                    elif shortCond_twin[i]:
+                        CondIni_twin[i] = -1
+                    else:
+                        CondIni_twin[i] = CondIni_twin[i-1]
+
+                longCondition_twin = np.full(n, False)
+                shortCondition_twin = np.full(n, False)
+                for i in range(1, n):
+                    longCondition_twin[i] = longCond_twin[i] and CondIni_twin[i-1] == -1
+                    shortCondition_twin[i] = shortCond_twin[i] and CondIni_twin[i-1] == 1
+            else:
+                longCondition_twin = np.full(n, True)  # Neutral for non-Twin methods
+                shortCondition_twin = np.full(n, True)
+                filt_twin = np.full(n, np.nan)
+                hband_twin = np.full(n, np.nan)
+                lband_twin = np.full(n, np.nan)
+
+            # Parabolic SAR
+            if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+                sar = np.full(n, np.nan)
+                af = sar_start
+                ep = high[0] if src[0] > src[0] else low[0]
+                trend = 1 if src[0] > src[0] else -1
+                sar[0] = low[0] if trend == 1 else high[0]
+
+                for i in range(1, n):
+                    if trend == 1:
+                        sar[i] = sar[i-1] + af * (ep - sar[i-1])
+                        if sar[i] > low[i]:
+                            trend = -1
+                            sar[i] = ep
                             ep = high[i]
-                            af = min(af + sar_increment, sar_maximum)
-                else:
-                    sar[i] = sar[i-1] + af * (ep - sar[i-1])
-                    if sar[i] < high[i]:
-                        trend = 1
-                        sar[i] = ep
-                        ep = low[i]
-                        af = sar_start
+                            af = sar_start
+                        else:
+                            if high[i] > ep:
+                                ep = high[i]
+                                af = min(af + sar_increment, sar_maximum)
                     else:
-                        if low[i] < ep:
+                        sar[i] = sar[i-1] + af * (ep - sar[i-1])
+                        if sar[i] < high[i]:
+                            trend = 1
+                            sar[i] = ep
                             ep = low[i]
-                            af = min(af + sar_increment, sar_maximum)
+                            af = sar_start
+                        else:
+                            if low[i] < ep:
+                                ep = low[i]
+                                af = min(af + sar_increment, sar_maximum)
 
-            sar_bullish = sar < low
-            sar_bearish = sar > high
-        else:
-            sar_bullish = np.full(n, True)  # Neutral for non-SAR methods
-            sar_bearish = np.full(n, True)
-            sar = np.full(n, np.nan)
+                sar_bullish = sar < low
+                sar_bearish = sar > high
+            else:
+                sar_bullish = np.full(n, True)  # Neutral for non-SAR methods
+                sar_bearish = np.full(n, True)
+                sar = np.full(n, np.nan)
 
-        # Combine signals based on method
-        if signal_method == 'Range Filter':
-            buy_signal = longCondition
-            sell_signal = shortCondition
-        elif signal_method == 'Range Filter + Twin Range Filter':
-            buy_signal = longCondition & longCondition_twin
-            sell_signal = shortCondition & shortCondition_twin
-        elif signal_method == 'Range Filter + Parabolic SAR':
-            buy_signal = longCondition & sar_bullish
-            sell_signal = shortCondition & sar_bearish
-        else:  # Range Filter + Twin Range Filter + Parabolic SAR
-            buy_signal = longCondition & longCondition_twin & sar_bullish
-            sell_signal = shortCondition & shortCondition_twin & sar_bearish
+            # Combine signals based on method
+            if signal_method == 'Range Filter':
+                buy_signal = longCondition
+                sell_signal = shortCondition
+            elif signal_method == 'Range Filter + Twin Range Filter':
+                buy_signal = longCondition & longCondition_twin
+                sell_signal = shortCondition & shortCondition_twin
+            elif signal_method == 'Range Filter + Parabolic SAR':
+                buy_signal = longCondition & sar_bullish
+                sell_signal = shortCondition & sar_bearish
+            else:  # Range Filter + Twin Range Filter + Parabolic SAR
+                buy_signal = longCondition & longCondition_twin & sar_bullish
+                sell_signal = shortCondition & shortCondition_twin & sar_bearish
+
+            # Initialize default EMA values for non-optimized methods
+            stock_data['ema_line'] = np.full(n, np.nan)
+            stock_data['ema_signal_mode'] = 'N/A'
 
         stock_data['range_filter'] = filt
         stock_data['smooth_range'] = smrng
@@ -492,10 +551,22 @@ def range_filter_signals(df, date_col='date', source_col='close',
         stock_data['condition_state'] = CondIni
         stock_data['buy_signal'] = buy_signal
         stock_data['sell_signal'] = sell_signal
-        stock_data['range_filter_twin'] = filt_twin
-        stock_data['upper_band_twin'] = hband_twin
-        stock_data['lower_band_twin'] = lband_twin
-        stock_data['sar_value'] = sar
+        
+        # Initialize twin filter data
+        if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+            stock_data['range_filter_twin'] = filt_twin
+            stock_data['upper_band_twin'] = hband_twin
+            stock_data['lower_band_twin'] = lband_twin
+        else:
+            stock_data['range_filter_twin'] = np.full(n, np.nan)
+            stock_data['upper_band_twin'] = np.full(n, np.nan)
+            stock_data['lower_band_twin'] = np.full(n, np.nan)
+        
+        # Initialize SAR data
+        if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+            stock_data['sar_value'] = sar
+        else:
+            stock_data['sar_value'] = np.full(n, np.nan)
 
         results.append(stock_data)
 
@@ -508,6 +579,7 @@ def get_multi_stock_signals(df, stock_col='stock', date_col='date', source_col='
                            sampling_period_fast=27, range_multiplier_fast=1.6,
                            sampling_period_slow=55, range_multiplier_slow=2.0,
                            sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
+                           ema_length=10, ema_signal_mode='Confirmation',
                            signal_method='Range Filter', signal_type='Both'):
     """Apply signals to multiple stocks based on selected method."""
     required_cols = [stock_col, date_col, source_col, 'high', 'low']
@@ -522,6 +594,7 @@ def get_multi_stock_signals(df, stock_col='stock', date_col='date', source_col='
             sampling_period_fast, range_multiplier_fast,
             sampling_period_slow, range_multiplier_slow,
             sar_start, sar_increment, sar_maximum,
+            ema_length, ema_signal_mode,
             signal_method
         )
         if signals.empty:
@@ -553,6 +626,7 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0,
                  sampling_period_fast=27, range_multiplier_fast=1.6,
                  sampling_period_slow=55, range_multiplier_slow=2.0,
                  sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
+                 ema_length=10, ema_signal_mode='Confirmation',
                  signal_method='Range Filter', signal_type='Both'):
     """Run the screener for the selected date, signal method, and type."""
     multi_stock_df = load_stock_data()
@@ -564,6 +638,7 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0,
         sampling_period_fast=sampling_period_fast, range_multiplier_fast=range_multiplier_fast,
         sampling_period_slow=sampling_period_slow, range_multiplier_slow=range_multiplier_slow,
         sar_start=sar_start, sar_increment=sar_increment, sar_maximum=sar_maximum,
+        ema_length=ema_length, ema_signal_mode=ema_signal_mode,
         signal_method=signal_method, signal_type=signal_type
     )
     if signals.empty:
@@ -589,7 +664,9 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0,
             "Range_Filter_Twin": float(row['range_filter_twin']) if not np.isnan(row['range_filter_twin']) else None,
             "Upper_Band_Twin": float(row['upper_band_twin']) if not np.isnan(row['upper_band_twin']) else None,
             "Lower_Band_Twin": float(row['lower_band_twin']) if not np.isnan(row['lower_band_twin']) else None,
-            "SAR_Value": float(row['sar_value']) if not np.isnan(row['sar_value']) else None
+            "SAR_Value": float(row['sar_value']) if not np.isnan(row['sar_value']) else None,
+            "EMA_Line": float(row['ema_line']) if not np.isnan(row['ema_line']) else None,
+            "EMA_Mode": row['ema_signal_mode'] if row['ema_signal_mode'] != 'N/A' else None
         })
     return results
 
@@ -621,14 +698,6 @@ def render_data_refresh():
                 auth_code = query_params.get('auth_code', [None])[0]
                 if auth_code:
                     st.sidebar.success("Auth code extracted!")
-                    # st.markdown(
-                    #     f"""
-                    #     <button onclick="navigator.clipboard.writeText('{auth_code}')">
-                    #         Copy Auth Code to Clipboard
-                    #     </button>
-                    #     """,
-                    #     unsafe_allow_html=True
-                    # )
                 else:
                     st.sidebar.error("No auth code found in URL")
             except Exception as e:
@@ -697,7 +766,7 @@ def main():
 
     signal_method = st.sidebar.selectbox(
         "Signal Method", 
-        ["Range Filter", "Range Filter + Twin Range Filter", 
+        ["Range Filter", "Optimized Range Filter", "Range Filter + Twin Range Filter", 
          "Range Filter + Parabolic SAR", "Range Filter + Twin Range Filter + Parabolic SAR"]
     )
     signal_type = st.sidebar.selectbox("Signal Type", ["Buy", "Sell", "Both"])
@@ -709,6 +778,19 @@ def main():
     st.sidebar.write("**Range Filter**")
     st.sidebar.info(f"Sampling Period: {sampling_period}")
     st.sidebar.info(f"Range Multiplier: {range_multiplier}")
+
+    # Optimized Range Filter parameters
+    if signal_method == 'Optimized Range Filter':
+        st.sidebar.subheader("EMA Enhancement")
+        ema_length = st.sidebar.slider("EMA Length", 1, 50, 10)
+        ema_signal_mode = st.sidebar.selectbox(
+            "EMA Signal Mode", 
+            ["Confirmation", "Trigger", "Filter"],
+            help="Confirmation: EMA confirms RF signals, Trigger: EMA crossover triggers signals, Filter: EMA filters RF signals"
+        )
+    else:
+        ema_length = 10
+        ema_signal_mode = 'Confirmation'
 
     if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
         st.sidebar.subheader("Twin Range Filter")
@@ -746,8 +828,13 @@ def main():
         st.info(f"📡 Signal Method: {signal_method}")
         st.info(f"📊 Signal Type: {signal_type}")
         st.info(f"**Range Filter:** Sampling Period: {sampling_period}, Range Multiplier: {range_multiplier}")
+        
+        if signal_method == 'Optimized Range Filter':
+            st.info(f"**EMA Enhancement:** Length: {ema_length}, Mode: {ema_signal_mode}")
+            
         if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
             st.info(f"**Twin Range Filter:** Fast Period: {sampling_period_fast}, Fast Multiplier: {range_multiplier_fast}, Slow Period: {sampling_period_slow}, Slow Multiplier: {range_multiplier_slow}")
+            
         if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
             st.info(f"**Parabolic SAR:** Start: {sar_start}, Increment: {sar_increment}, Maximum: {sar_maximum}")
 
@@ -763,11 +850,21 @@ def main():
             st.warning("No data loaded or available")
 
         st.write("**Signal Conditions:**")
-        st.write("• **Range Filter:** Price above/below filter with trend change")
-        if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
-            st.write("• **Twin Range Filter:** Combined fast/slow range filter agreement")
-        if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
-            st.write("• **Parabolic SAR:** SAR below low (buy) or above high (sell)")
+        if signal_method == 'Optimized Range Filter':
+            st.write("• **Range Filter:** Price breakout with EMA enhancement")
+            st.write(f"• **EMA Mode - {ema_signal_mode}:**")
+            if ema_signal_mode == "Confirmation":
+                st.write("  - EMA confirms RF signals with trend direction")
+            elif ema_signal_mode == "Trigger":
+                st.write("  - EMA crossover triggers with RF confirmation")
+            else:
+                st.write("  - EMA filters RF signals by price position")
+        else:
+            st.write("• **Range Filter:** Price above/below filter with trend change")
+            if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+                st.write("• **Twin Range Filter:** Combined fast/slow range filter agreement")
+            if signal_method in ['Range Filter + Parabolic SAR', 'Range Filter + Twin Range Filter + Parabolic SAR']:
+                st.write("• **Parabolic SAR:** SAR below low (buy) or above high (sell)")
 
     with col2:
         st.subheader("Screener Results")
@@ -779,6 +876,7 @@ def main():
                         sampling_period_fast, range_multiplier_fast,
                         sampling_period_slow, range_multiplier_slow,
                         sar_start, sar_increment, sar_maximum,
+                        ema_length, ema_signal_mode,
                         signal_method, signal_type
                     )
                     if screener_results:
@@ -803,17 +901,29 @@ def main():
                                 st.write(f"{stock['Strength']}")
 
                         st.markdown("### 📋 Detailed Results")
-                        display_df = df[['Stock', 'Price', 'Signal', 'Strength', 'Range_Filter', 
-                                       'Upper_Band', 'Lower_Band', 'Range_Filter_Twin', 
-                                       'Upper_Band_Twin', 'Lower_Band_Twin', 'SAR_Value']].copy()
-                        display_df['Price'] = display_df['Price'].round(2)
-                        display_df['Range_Filter'] = display_df['Range_Filter'].round(2)
-                        display_df['Upper_Band'] = display_df['Upper_Band'].round(2)
-                        display_df['Lower_Band'] = display_df['Lower_Band'].round(2)
-                        display_df['Range_Filter_Twin'] = display_df['Range_Filter_Twin'].round(2)
-                        display_df['Upper_Band_Twin'] = display_df['Upper_Band_Twin'].round(2)
-                        display_df['Lower_Band_Twin'] = display_df['Lower_Band_Twin'].round(2)
-                        display_df['SAR_Value'] = display_df['SAR_Value'].round(2)
+                        # Prepare display dataframe based on signal method
+                        base_cols = ['Stock', 'Price', 'Signal', 'Strength', 'Range_Filter', 'Upper_Band', 'Lower_Band']
+                        display_cols = base_cols.copy()
+                        
+                        if signal_method == 'Optimized Range Filter':
+                            display_cols.extend(['EMA_Line', 'EMA_Mode'])
+                        elif 'Twin Range Filter' in signal_method:
+                            display_cols.extend(['Range_Filter_Twin', 'Upper_Band_Twin', 'Lower_Band_Twin'])
+                        if 'Parabolic SAR' in signal_method:
+                            display_cols.append('SAR_Value')
+                            
+                        # Filter out None columns and prepare display
+                        available_cols = [col for col in display_cols if col in df.columns and not df[col].isna().all()]
+                        display_df = df[available_cols].copy()
+                        
+                        # Round numerical columns
+                        numeric_cols = ['Price', 'Range_Filter', 'Upper_Band', 'Lower_Band', 
+                                      'Range_Filter_Twin', 'Upper_Band_Twin', 'Lower_Band_Twin', 
+                                      'SAR_Value', 'EMA_Line']
+                        for col in numeric_cols:
+                            if col in display_df.columns:
+                                display_df[col] = pd.to_numeric(display_df[col], errors='coerce').round(2)
+                        
                         st.dataframe(display_df, use_container_width=True)
 
                         st.markdown("### 📊 Summary")
@@ -851,10 +961,16 @@ def main():
     6. Download results as CSV
 
     **Signal Methods:**
-    - **Range Filter:** Trend-following breakout signals
+    - **Range Filter:** Basic trend-following breakout signals
+    - **Optimized Range Filter:** Range Filter enhanced with EMA confirmation/trigger/filter modes
     - **Twin Range Filter:** Combines fast and slow range filters for confirmation
     - **Parabolic SAR:** Confirms signals with trend direction
     - **Combined:** Requires agreement across selected indicators
+    
+    **EMA Signal Modes (Optimized Range Filter):**
+    - **Confirmation:** EMA must confirm Range Filter signals with trend direction
+    - **Trigger:** EMA crossovers trigger signals when Range Filter agrees
+    - **Filter:** EMA position filters Range Filter signals
     """)
 
 if __name__ == "__main__":
