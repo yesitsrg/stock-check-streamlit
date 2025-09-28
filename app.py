@@ -379,11 +379,20 @@ def range_filter_signals(df, date_col='date', source_col='close',
             longCondition[i] = longCond[i] and CondIni[i-1] == -1
             shortCondition[i] = shortCond[i] and CondIni[i-1] == 1
 
-        # Optimized Range Filter with EMA
+        # Optimized Range Filter with EMA (Direct Pine Script translation)
         if signal_method == 'Optimized Range Filter':
             ema_line = pine_ema(src, ema_length)
             
-            # EMA conditions
+            # Basic signals (direct translation from Pine Script)
+            basic_buy = np.full(n, False)
+            basic_sell = np.full(n, False)
+            for i in range(1, n):
+                # ta.crossover(src, filt) = src > filt AND src[1] <= filt[1]
+                basic_buy[i] = (src[i] > filt[i]) and (src[i-1] <= filt[i-1])
+                # ta.crossunder(src, filt) = src < filt AND src[1] >= filt[1] 
+                basic_sell[i] = (src[i] < filt[i]) and (src[i-1] >= filt[i-1])
+            
+            # EMA conditions (direct translation)
             price_above_ema = src > ema_line
             price_below_ema = src < ema_line
             ema_rising = np.full(n, False)
@@ -393,27 +402,24 @@ def range_filter_signals(df, date_col='date', source_col='close',
                 ema_rising[i] = ema_line[i] > ema_line[i-1]
                 ema_falling[i] = ema_line[i] < ema_line[i-1]
             
-            # Use the existing Range Filter signals (longCondition/shortCondition) as base
-            # These are the correct "basic_buy" and "basic_sell" equivalents from Pine Script
-            basic_buy = longCondition  # This is the proper Range Filter buy signal
-            basic_sell = shortCondition  # This is the proper Range Filter sell signal
+            # Bullish/Bearish conditions (from existing logic)
+            is_bullish = upward > 0
+            is_bearish = downward > 0
             
-            # Apply EMA signal modes to the existing Range Filter signals
+            # RF signals with EMA modes (exact Pine Script translation)
             if ema_signal_mode == "Confirmation":
                 rf_buy_signal = basic_buy & price_above_ema & ema_rising
                 rf_sell_signal = basic_sell & price_below_ema & ema_falling
             elif ema_signal_mode == "Trigger":
-                # Trigger mode: EMA crossover with range filter confirmation
-                ema_cross_up = np.full(n, False)
-                ema_cross_down = np.full(n, False)
+                # ta.crossover(src, ema_line) and src > filt and is_bullish
+                ema_crossover_up = np.full(n, False)
+                ema_crossover_down = np.full(n, False)
                 for i in range(1, n):
-                    ema_cross_up[i] = (src[i] > ema_line[i] and src[i-1] <= ema_line[i])
-                    ema_cross_down[i] = (src[i] < ema_line[i] and src[i-1] >= ema_line[i])
+                    ema_crossover_up[i] = (src[i] > ema_line[i]) and (src[i-1] <= ema_line[i-1])
+                    ema_crossover_down[i] = (src[i] < ema_line[i]) and (src[i-1] >= ema_line[i-1])
                 
-                is_bullish = upward > 0
-                is_bearish = downward > 0
-                rf_buy_signal = ema_cross_up & (src > filt) & is_bullish
-                rf_sell_signal = ema_cross_down & (src < filt) & is_bearish
+                rf_buy_signal = ema_crossover_up & (src > filt) & is_bullish
+                rf_sell_signal = ema_crossover_down & (src < filt) & is_bearish
             else:  # Filter mode
                 rf_buy_signal = basic_buy & price_above_ema
                 rf_sell_signal = basic_sell & price_below_ema
