@@ -393,13 +393,13 @@ def range_filter_signals(df, date_col='date', source_col='close',
                 ema_rising[i] = ema_line[i] > ema_line[i-1]
                 ema_falling[i] = ema_line[i] < ema_line[i-1]
             
-            # Basic crossover signals
+            # Basic crossover signals - Fixed crossover logic
             basic_buy = np.full(n, False)
             basic_sell = np.full(n, False)
             for i in range(1, n):
-                # Crossover and crossunder equivalent
-                basic_buy[i] = (src[i] > filt[i] and src[i-1] <= filt[i-1])
-                basic_sell[i] = (src[i] < filt[i] and src[i-1] >= filt[i-1])
+                # Correct crossover: current src vs current filt, previous src vs current filt
+                basic_buy[i] = (src[i] > filt[i] and src[i-1] <= filt[i])
+                basic_sell[i] = (src[i] < filt[i] and src[i-1] >= filt[i])
             
             # Apply EMA signal modes
             if ema_signal_mode == "Confirmation":
@@ -407,11 +407,12 @@ def range_filter_signals(df, date_col='date', source_col='close',
                 rf_sell_signal = basic_sell & price_below_ema & ema_falling
             elif ema_signal_mode == "Trigger":
                 # Trigger mode: EMA crossover with range filter confirmation
+                # Fixed crossover logic - current src vs current ema, previous src vs current ema
                 ema_cross_up = np.full(n, False)
                 ema_cross_down = np.full(n, False)
                 for i in range(1, n):
-                    ema_cross_up[i] = (src[i] > ema_line[i] and src[i-1] <= ema_line[i-1])
-                    ema_cross_down[i] = (src[i] < ema_line[i] and src[i-1] >= ema_line[i-1])
+                    ema_cross_up[i] = (src[i] > ema_line[i] and src[i-1] <= ema_line[i])
+                    ema_cross_down[i] = (src[i] < ema_line[i] and src[i-1] >= ema_line[i])
                 
                 is_bullish = upward > 0
                 is_bearish = downward > 0
