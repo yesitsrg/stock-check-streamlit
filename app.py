@@ -150,84 +150,84 @@ class FyersNifty500Downloader:
 
     def get_nifty500_symbols(self):
         """Return list of Nifty 500 stock symbols in NSE format."""
-        nifty500_stocks =  [
-    "ACMESOLAR", "CAMPUS", "UTIAMC", "ABSLAMC", "SAMMAANCAP", "CGCL", "GLENMARK", 
-    "KIRLOSENG", "PREMIERENE", "OLECTRA", "LLOYDSME", "LEMONTREE", "SYRMA", 
-    "SAGILITY", "JPPOWER", "JBMA", "IIFL", "PRESTIGE", "PAYTM", "BLS", "IREDA", 
-    "NUVAMA", "HOMEFIRST", "GODIGIT", "PFC", "AWL", "SWSOLAR", "BALRAMCHIN", 
-    "DBREALTY", "JSWENERGY", "PCBL", "NAM-INDIA", "RADICO", "HDFCAMC", "MEDANTA", 
-    "SCHNEIDER", "CONCOR", "JUBLPHARMA", "JUBLINGREA", "BBTC", "NYKAA", "RTNINDIA", 
-    "EMCURE", "WAAREEENER", "MANAPPURAM", "ANANTRAJ", "KAYNES", "MARUTI", 
-    "SIGNATURE", "ADANIPOWER", "RECLTD", "APTUS", "INOXWIND", "MOTILALOFS", 
-    "HEG", "MSUMI", "AMBER", "BLUEDART", "RKFORGE", "ELGIEQUIP", "VTL", "PVRINOX", 
-    "GICRE", "INDUSINDBK", "ROUTE", "SCHAEFFLER", "TATASTEEL", "ENGINERSIN", 
-    "APARINDS", "MAHSEAMLES", "EIHOTEL", "LODHA", "SWIGGY", "BAJFINANCE", 
-    "TEJASNET", "APLAPOLLO", "TATATECH", "NMDC", "ACE", "NATIONALUM", "SBFC", 
-    "TITAGARH", "GRAPHITE", "JIOFIN", "IDEA", "BPCL", "RHIM", "3MINDIA", 
-    "ANANDRATHI", "MFSL", "JYOTICNC", "CCL", "EIDPARRY", "TRITURBINE", "HYUNDAI", 
-    "KAJARIACER", "COHANCE", "FIVESTAR", "KIMS", "LICHSGFIN", "CRISIL", 
-    "AXISBANK", "SAILIFE", "NSLNISP", "SUNDARMFIN", "NETWEB", "ADANIGREEN", 
-    "TORNTPOWER", "IOC", "OBEROIRLTY", "SWANENERGY", "SAIL", "NTPCGREEN", 
-    "ALIVUS", "SOBHA", "PIDILITIND", "JSL", "HSCL", "WELSPUNLIV", "CROMPTON", 
-    "TRIVENI", "BALKRISIND", "ERIS", "PATANJALI", "HBLENGINE", "INDUSTOWER", 
-    "CHALET", "ECLERX", "VOLTAS", "JINDALSTEL", "ATGL", "ITI", "TATACHEM", 
-    "SBIN", "ASAHIINDIA", "RITES", "GPIL", "RVNL", "CHOLAHLDNG", "BAJAJFINSV", 
-    "ARE&M", "PRAJIND", "ALKYLAMINE", "AEGISLOG", "HONAUT", "BOSCHLTD", "GVT&D", 
-    "JUBLFOOD", "VGUARD", "ULTRACEMCO", "CERA", "TATAELXSI", "RPOWER", "AFCONS", 
-    "UNITDSPR", "KALYANKJIL", "BANDHANBNK", "ADANIENSOL", "JMFINANCIL", 
-    "POONAWALLA", "ASTRAL", "DIXON", "MAPMYINDIA", "ADANIENT", "NH", "TATAMOTORS", 
-    "EXIDEIND", "LINDEINDIA", "TRENT", "DLF", "IGIL", "MINDACORP", "JWL", 
-    "USHAMART", "GAIL", "KEI", "KPRMILL", "HINDALCO", "ACC", "HUDCO", "GPPL", 
-    "TTML", "CAMS", "HAVELLS", "CGPOWER", "POLYCAB", "CEATLTD", "UCOBANK", 
-    "LT", "GRASIM", "JUSTDIAL", "DEEPAKNTR", "CDSL", "BHEL", "LTFOODS", 
-    "TATAPOWER", "HINDCOPPER", "ONGC", "DEVYANI", "NBCC", "JSWINFRA", "AIIL", 
-    "RAYMONDLSL", "POWERGRID", "BRIGADE", "AADHARHFC", "THERMAX", "ANGELONE", 
-    "CUMMINSIND", "HDFCBANK", "NIVABUPA", "BATAINDIA", "ZEEL", "JSWSTEEL", 
-    "GODFRYPHLP", "TATACONSUM", "GODREJPROP", "TATAINVEST", "INDIGO", "TITAN", 
-    "TIINDIA", "VIJAYA", "SKFINDIA", "HEROMOTOCO", "TCS", "INDIAMART", 
-    "GODREJIND", "MARICO", "TANLA", "KOTAKBANK", "KNRCON", "IRFC", "DALBHARAT", 
-    "IRCTC", "J&KBANK", "SUZLON", "DMART", "SJVN", "IRB", "FINPIPE", "JKCEMENT", 
-    "BRITANNIA", "ADANIPORTS", "NTPC", "IRCON", "DRREDDY", "ZENSARTECH", 
-    "GODREJAGRO", "MAXHEALTH", "ETERNAL", "BASF", "NESTLEIND", "SBILIFE", 
-    "CARBORUNIV", "SBICARD", "BAJAJHFL", "TECHNOE", "NHPC", "POLYMED", 
-    "CAPLIPOINT", "COROMANDEL", "PETRONET", "UPL", "ABCAPITAL", "MUTHOOTFIN", 
-    "KEC", "IDBI", "UNIONBANK", "RAINBOW", "LAURUSLABS", "BHARTIHEXA", "MANYAVAR", 
-    "IEX", "IDFCFIRSTB", "ABBOTINDIA", "CREDITACC", "TVSMOTOR", "ASHOKLEY", 
-    "SHYAMMETL", "LTTS", "RELIANCE", "ICICIBANK", "WHIRLPOOL", "PEL", 
-    "LATENTVIEW", "RENUKA", "APLLTD", "HAPPSTMNDS", "WELCORP", "RCF", 
-    "TORNTPHARM", "DABUR", "HONASA", "IOB", "PAGEIND", "KIRLOSBROS", "BAJAJ-AUTO", 
-    "MPHASIS", "RRKABEL", "CENTURYPLY", "BIKAJI", "RAILTEL", "HINDUNILVR", 
-    "SAREGAMA", "BANKBARODA", "AUBANK", "PPLPHARMA", "HFCL", "YESBANK", 
-    "CHAMBLFERT", "SONACOMS", "GODREJCP", "UNOMINDA", "SAPPHIRE", "BEML", 
-    "SUPREMEIND", "FLUOROCHEM", "MAZDOCK", "TATACOMM", "MASTEK", "KPIL", "ITC", 
-    "LTIM", "TRIDENT", "FACT", "HINDZINC", "MRPL", "EICHERMOT", "APOLLOTYRE", 
-    "APOLLOHOSP", "ASIANPAINT", "INOXINDIA", "RAYMOND", "BSOFT", "360ONE", 
-    "JKTYRE", "IFCI", "NETWORK18", "VMM", "MMTC", "BEL", "BLUESTARCO", "CYIENT", 
-    "TARIL", "KANSAINER", "CONCORDBIO", "PNBHOUSING", "REDINGTON", "HINDPETRO", 
-    "CESC", "CRAFTSMAN", "POLICYBZR", "FINCABLES", "INDIACEM", "LUPIN", 
-    "CENTRALBK", "COALINDIA", "GMRAIRPORT", "MAHABANK", "DEEPAKFERT", "JINDALSAW", 
-    "IGL", "KFINTECH", "CLEAN", "NLCINDIA", "HCLTECH", "SUNDRMFAST", "UBL", 
-    "IKS", "NEULANDLAB", "SRF", "FORTIS", "VEDL", "BAJAJHLDNG", "SUNPHARMA", 
-    "AUROPHARMA", "BIOCON", "GNFC", "NCC", "DELHIVERY", "COLPAL", "AAVAS", 
-    "JBCHEPHARM", "MOTHERSON", "ZYDUSLIFE", "ABB", "IPCALAB", "INDHOTEL", 
-    "SHRIRAMFIN", "OLAELEC", "MANKIND", "SYNGENE", "NAVA", "KPITTECH", "FIRSTCRY", 
-    "PNCINFRA", "AFFLE", "CANBK", "M&M", "MGL", "COCHINSHIP", "PNB", "CHOLAFIN", 
-    "SUNTV", "BERGEPAINT", "SARDAEN", "FEDERALBNK", "NIACL", "TIMKEN", 
-    "PHOENIXLTD", "PERSISTENT", "ABREL", "GMDCLTD", "MCX", "OIL", "KARURVYSYA", 
-    "AJANTPHARM", "NAUKRI", "SCI", "LTF", "SUMICHEM", "ESCORTS", "INFY", 
-    "ZFCVINDIA", "HAL", "SHREECEM", "STARHEALTH", "VBL", "DOMS", "INDIANB", 
-    "AMBUJACEM", "GUJGASLTD", "ABFRL", "SIEMENS", "NATCOPHARM", "CASTROLIND", 
-    "AARTIIND", "BSE", "ICICIGI", "TECHM", "GRAVITA", "PGEL", "CHENNPETRO", 
-    "M&MFIN", "AIAENG", "GRANULES", "CIPLA", "BANKINDIA", "GSPL", "WIPRO", 
-    "ICICIPRULI", "POWERINDIA", "ATUL", "GLAXO", "ALKEM", "WOCKPHARMA", 
-    "JYOTHYLAB", "GILLETTE", "ENDURANCE", "TBOTEK", "ASTERDM", "DCMSHRIRAM", 
-    "CUB", "SONATSOFTW", "RAMCOCEM", "GESHIP", "INDGN", "GLAND", "DIVISLAB", 
-    "LALPATHLAB", "OFSS", "BHARATFORG", "NEWGEN", "NAVINFLUOR", "FSL", "MRF", 
-    "EMAMILTD", "LICI", "SOLARINDS", "PTCIL", "ALOKINDS", "AKUMS", "ASTRAZEN", 
-    "BHARTIARTL", "WESTLIFE", "COFORGE", "INTELLECT", "HDFCLIFE", "DATAPATTNS", 
-    "JSWHL", "CANFINHOME", "ZENTEC", "PIIND", "ELECON", "PFIZER", "RBLBANK", 
-    "GRSE", "BAYERCROP", "METROPOLIS", "BDL"
-]
+        nifty500_stocks = [
+            "ACMESOLAR", "CAMPUS", "UTIAMC", "ABSLAMC", "SAMMAANCAP", "CGCL", "GLENMARK", 
+            "KIRLOSENG", "PREMIERENE", "OLECTRA", "LLOYDSME", "LEMONTREE", "SYRMA", 
+            "SAGILITY", "JPPOWER", "JBMA", "IIFL", "PRESTIGE", "PAYTM", "BLS", "IREDA", 
+            "NUVAMA", "HOMEFIRST", "GODIGIT", "PFC", "AWL", "SWSOLAR", "BALRAMCHIN", 
+            "DBREALTY", "JSWENERGY", "PCBL", "NAM-INDIA", "RADICO", "HDFCAMC", "MEDANTA", 
+            "SCHNEIDER", "CONCOR", "JUBLPHARMA", "JUBLINGREA", "BBTC", "NYKAA", "RTNINDIA", 
+            "EMCURE", "WAAREEENER", "MANAPPURAM", "ANANTRAJ", "KAYNES", "MARUTI", 
+            "SIGNATURE", "ADANIPOWER", "RECLTD", "APTUS", "INOXWIND", "MOTILALOFS", 
+            "HEG", "MSUMI", "AMBER", "BLUEDART", "RKFORGE", "ELGIEQUIP", "VTL", "PVRINOX", 
+            "GICRE", "INDUSINDBK", "ROUTE", "SCHAEFFLER", "TATASTEEL", "ENGINERSIN", 
+            "APARINDS", "MAHSEAMLES", "EIHOTEL", "LODHA", "SWIGGY", "BAJFINANCE", 
+            "TEJASNET", "APLAPOLLO", "TATATECH", "NMDC", "ACE", "NATIONALUM", "SBFC", 
+            "TITAGARH", "GRAPHITE", "JIOFIN", "IDEA", "BPCL", "RHIM", "3MINDIA", 
+            "ANANDRATHI", "MFSL", "JYOTICNC", "CCL", "EIDPARRY", "TRITURBINE", "HYUNDAI", 
+            "KAJARIACER", "COHANCE", "FIVESTAR", "KIMS", "LICHSGFIN", "CRISIL", 
+            "AXISBANK", "SAILIFE", "NSLNISP", "SUNDARMFIN", "NETWEB", "ADANIGREEN", 
+            "TORNTPOWER", "IOC", "OBEROIRLTY", "SWANENERGY", "SAIL", "NTPCGREEN", 
+            "ALIVUS", "SOBHA", "PIDILITIND", "JSL", "HSCL", "WELSPUNLIV", "CROMPTON", 
+            "TRIVENI", "BALKRISIND", "ERIS", "PATANJALI", "HBLENGINE", "INDUSTOWER", 
+            "CHALET", "ECLERX", "VOLTAS", "JINDALSTEL", "ATGL", "ITI", "TATACHEM", 
+            "SBIN", "ASAHIINDIA", "RITES", "GPIL", "RVNL", "CHOLAHLDNG", "BAJAJFINSV", 
+            "ARE&M", "PRAJIND", "ALKYLAMINE", "AEGISLOG", "HONAUT", "BOSCHLTD", "GVT&D", 
+            "JUBLFOOD", "VGUARD", "ULTRACEMCO", "CERA", "TATAELXSI", "RPOWER", "AFCONS", 
+            "UNITDSPR", "KALYANKJIL", "BANDHANBNK", "ADANIENSOL", "JMFINANCIL", 
+            "POONAWALLA", "ASTRAL", "DIXON", "MAPMYINDIA", "ADANIENT", "NH", "TATAMOTORS", 
+            "EXIDEIND", "LINDEINDIA", "TRENT", "DLF", "IGIL", "MINDACORP", "JWL", 
+            "USHAMART", "GAIL", "KEI", "KPRMILL", "HINDALCO", "ACC", "HUDCO", "GPPL", 
+            "TTML", "CAMS", "HAVELLS", "CGPOWER", "POLYCAB", "CEATLTD", "UCOBANK", 
+            "LT", "GRASIM", "JUSTDIAL", "DEEPAKNTR", "CDSL", "BHEL", "LTFOODS", 
+            "TATAPOWER", "HINDCOPPER", "ONGC", "DEVYANI", "NBCC", "JSWINFRA", "AIIL", 
+            "RAYMONDLSL", "POWERGRID", "BRIGADE", "AADHARHFC", "THERMAX", "ANGELONE", 
+            "CUMMINSIND", "HDFCBANK", "NIVABUPA", "BATAINDIA", "ZEEL", "JSWSTEEL", 
+            "GODFRYPHLP", "TATACONSUM", "GODREJPROP", "TATAINVEST", "INDIGO", "TITAN", 
+            "TIINDIA", "VIJAYA", "SKFINDIA", "HEROMOTOCO", "TCS", "INDIAMART", 
+            "GODREJIND", "MARICO", "TANLA", "KOTAKBANK", "KNRCON", "IRFC", "DALBHARAT", 
+            "IRCTC", "J&KBANK", "SUZLON", "DMART", "SJVN", "IRB", "FINPIPE", "JKCEMENT", 
+            "BRITANNIA", "ADANIPORTS", "NTPC", "IRCON", "DRREDDY", "ZENSARTECH", 
+            "GODREJAGRO", "MAXHEALTH", "ETERNAL", "BASF", "NESTLEIND", "SBILIFE", 
+            "CARBORUNIV", "SBICARD", "BAJAJHFL", "TECHNOE", "NHPC", "POLYMED", 
+            "CAPLIPOINT", "COROMANDEL", "PETRONET", "UPL", "ABCAPITAL", "MUTHOOTFIN", 
+            "KEC", "IDBI", "UNIONBANK", "RAINBOW", "LAURUSLABS", "BHARTIHEXA", "MANYAVAR", 
+            "IEX", "IDFCFIRSTB", "ABBOTINDIA", "CREDITACC", "TVSMOTOR", "ASHOKLEY", 
+            "SHYAMMETL", "LTTS", "RELIANCE", "ICICIBANK", "WHIRLPOOL", "PEL", 
+            "LATENTVIEW", "RENUKA", "APLLTD", "HAPPSTMNDS", "WELCORP", "RCF", 
+            "TORNTPHARM", "DABUR", "HONASA", "IOB", "PAGEIND", "KIRLOSBROS", "BAJAJ-AUTO", 
+            "MPHASIS", "RRKABEL", "CENTURYPLY", "BIKAJI", "RAILTEL", "HINDUNILVR", 
+            "SAREGAMA", "BANKBARODA", "AUBANK", "PPLPHARMA", "HFCL", "YESBANK", 
+            "CHAMBLFERT", "SONACOMS", "GODREJCP", "UNOMINDA", "SAPPHIRE", "BEML", 
+            "SUPREMEIND", "FLUOROCHEM", "MAZDOCK", "TATACOMM", "MASTEK", "KPIL", "ITC", 
+            "LTIM", "TRIDENT", "FACT", "HINDZINC", "MRPL", "EICHERMOT", "APOLLOTYRE", 
+            "APOLLOHOSP", "ASIANPAINT", "INOXINDIA", "RAYMOND", "BSOFT", "360ONE", 
+            "JKTYRE", "IFCI", "NETWORK18", "VMM", "MMTC", "BEL", "BLUESTARCO", "CYIENT", 
+            "TARIL", "KANSAINER", "CONCORDBIO", "PNBHOUSING", "REDINGTON", "HINDPETRO", 
+            "CESC", "CRAFTSMAN", "POLICYBZR", "FINCABLES", "INDIACEM", "LUPIN", 
+            "CENTRALBK", "COALINDIA", "GMRAIRPORT", "MAHABANK", "DEEPAKFERT", "JINDALSAW", 
+            "IGL", "KFINTECH", "CLEAN", "NLCINDIA", "HCLTECH", "SUNDRMFAST", "UBL", 
+            "IKS", "NEULANDLAB", "SRF", "FORTIS", "VEDL", "BAJAJHLDNG", "SUNPHARMA", 
+            "AUROPHARMA", "BIOCON", "GNFC", "NCC", "DELHIVERY", "COLPAL", "AAVAS", 
+            "JBCHEPHARM", "MOTHERSON", "ZYDUSLIFE", "ABB", "IPCALAB", "INDHOTEL", 
+            "SHRIRAMFIN", "OLAELEC", "MANKIND", "SYNGENE", "NAVA", "KPITTECH", "FIRSTCRY", 
+            "PNCINFRA", "AFFLE", "CANBK", "M&M", "MGL", "COCHINSHIP", "PNB", "CHOLAFIN", 
+            "SUNTV", "BERGEPAINT", "SARDAEN", "FEDERALBNK", "NIACL", "TIMKEN", 
+            "PHOENIXLTD", "PERSISTENT", "ABREL", "GMDCLTD", "MCX", "OIL", "KARURVYSYA", 
+            "AJANTPHARM", "NAUKRI", "SCI", "LTF", "SUMICHEM", "ESCORTS", "INFY", 
+            "ZFCVINDIA", "HAL", "SHREECEM", "STARHEALTH", "VBL", "DOMS", "INDIANB", 
+            "AMBUJACEM", "GUJGASLTD", "ABFRL", "SIEMENS", "NATCOPHARM", "CASTROLIND", 
+            "AARTIIND", "BSE", "ICICIGI", "TECHM", "GRAVITA", "PGEL", "CHENNPETRO", 
+            "M&MFIN", "AIAENG", "GRANULES", "CIPLA", "BANKINDIA", "GSPL", "WIPRO", 
+            "ICICIPRULI", "POWERINDIA", "ATUL", "GLAXO", "ALKEM", "WOCKPHARMA", 
+            "JYOTHYLAB", "GILLETTE", "ENDURANCE", "TBOTEK", "ASTERDM", "DCMSHRIRAM", 
+            "CUB", "SONATSOFTW", "RAMCOCEM", "GESHIP", "INDGN", "GLAND", "DIVISLAB", 
+            "LALPATHLAB", "OFSS", "BHARATFORG", "NEWGEN", "NAVINFLUOR", "FSL", "MRF", 
+            "EMAMILTD", "LICI", "SOLARINDS", "PTCIL", "ALOKINDS", "AKUMS", "ASTRAZEN", 
+            "BHARTIARTL", "WESTLIFE", "COFORGE", "INTELLECT", "HDFCLIFE", "DATAPATTNS", 
+            "JSWHL", "CANFINHOME", "ZENTEC", "PIIND", "ELECON", "PFIZER", "RBLBANK", 
+            "GRSE", "BAYERCROP", "METROPOLIS", "BDL"
+        ]
         return [f"NSE:{symbol}-EQ" for symbol in nifty500_stocks]
 
     def get_historical_data(self, symbol, days=2):
@@ -273,7 +273,10 @@ def range_filter_signals(df, date_col='date', source_col='close',
                         sampling_period_slow=55, range_multiplier_slow=2.0,
                         sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
                         ema_length=10, ema_signal_mode='Confirmation',
-                        signal_method='Range Filter'):
+                        signal_method='Range Filter',
+                        ut_atr_period=7, ut_key=1.2, 
+                        ut_pct_filter=0.0, ut_swing_len=0,
+                        ut_delay_filter=0.0, ut_zlsma_filter=0.0):
     """Calculate signals based on selected method."""
     data = df.copy()
     if date_col not in data.columns:
@@ -380,8 +383,195 @@ def range_filter_signals(df, date_col='date', source_col='close',
             longCondition[i] = longCond[i] and CondIni[i-1] == -1
             shortCondition[i] = shortCond[i] and CondIni[i-1] == 1
 
-        # Optimized Range Filter with EMA (Direct Pine Script translation)
-        if signal_method == 'Optimized Range Filter':
+        # ============================================================================
+        # NEW OPTIMIZED RANGE FILTER - UT BOT LOGIC FROM PINE SCRIPT
+        # ============================================================================
+        if signal_method == 'New Optimized Range Filter':
+            # Pine-style ATR calculation
+            def pine_atr(high, low, close, period):
+                tr = np.full(len(high), np.nan)
+                tr[0] = high[0] - low[0]
+                for i in range(1, len(high)):
+                    hl = high[i] - low[i]
+                    hc = abs(high[i] - close[i-1])
+                    lc = abs(low[i] - close[i-1])
+                    tr[i] = max(hl, hc, lc)
+                return pine_ema(tr, period)
+            
+            # Calculate ATR
+            xATR = pine_atr(high, low, src, ut_atr_period)
+            
+            # Momentum calculation (5-period momentum / price)
+            momentum = np.full(n, 0.0)
+            for i in range(5, n):
+                momentum[i] = (src[i] - src[i-5]) / src[i] if src[i] != 0 else 0.0
+            
+            # Volume ratio (current volume / 20-period SMA of volume)
+            vol = stock_data['volume'].values
+            vol_sma = np.full(n, np.nan)
+            if n >= 20:
+                vol_sma[19] = np.mean(vol[:20])
+                for i in range(20, n):
+                    vol_sma[i] = vol_sma[i-1] + (vol[i] - vol_sma[i-1]) / 20
+            
+            vol_ratio = np.full(n, 1.0)
+            for i in range(20, n):
+                if not np.isnan(vol_sma[i]) and vol_sma[i] > 0:
+                    vol_ratio[i] = vol[i] / vol_sma[i]
+                    vol_ratio[i] = max(0.8, min(1.2, vol_ratio[i]))  # Clamp between 0.8 and 1.2
+            
+            # Adaptive key calculation
+            adaptiveKey = np.full(n, np.nan)
+            for i in range(n):
+                adaptiveKey[i] = ut_key * (1 + abs(momentum[i]) * 2) * vol_ratio[i]
+            
+            # Trail distance
+            trailDist = xATR * adaptiveKey
+            
+            # Initialize trailing stop
+            xATRTrailingStop = np.full(n, np.nan)
+            xATRTrailingStop[0] = src[0]
+            
+            # Exponential smoothing factor
+            smoothing = 0.3
+            
+            # Calculate trailing stop with smoothing
+            for i in range(1, n):
+                if src[i] > xATRTrailingStop[i-1]:
+                    targetTrail = src[i] - trailDist[i]
+                else:
+                    targetTrail = src[i] + trailDist[i]
+                
+                xATRTrailingStop[i] = xATRTrailingStop[i-1] * (1 - smoothing) + targetTrail * smoothing
+            
+            # Flip detection (crossover/crossunder)
+            above = np.full(n, False)
+            below = np.full(n, False)
+            for i in range(1, n):
+                # Crossover: src crosses above trailing stop AND volume ratio > 0.8
+                above[i] = (src[i] > xATRTrailingStop[i] and src[i-1] <= xATRTrailingStop[i-1] and vol_ratio[i] > 0.8)
+                # Crossunder: src crosses below trailing stop AND volume ratio > 0.8
+                below[i] = (src[i] < xATRTrailingStop[i] and src[i-1] >= xATRTrailingStop[i-1] and vol_ratio[i] > 0.8)
+
+            # Direction states
+            barbuy = src > xATRTrailingStop
+            barsell = src < xATRTrailingStop
+            
+            # Percentage change filter
+            atrPct = np.full(n, 0.0)
+            for i in range(n):
+                if src[i] != 0 and not np.isnan(xATR[i]):
+                    atrPct[i] = min((xATR[i] / src[i] * 100.0), 20.0)  # Cap at 20%
+            
+            kUT = 0.50
+            thr = np.maximum(ut_pct_filter, atrPct * kUT)
+            
+            chgOk = np.full(n, True)
+            if ut_pct_filter > 0:  # Only apply if filter is enabled
+                for i in range(1, n):
+                    if src[i-1] != 0:
+                        pct_change = abs(src[i] - src[i-1]) / src[i-1] * 100.0
+                        chgOk[i] = pct_change > thr[i]
+            
+            # Swing filter
+            swingLen = int(ut_swing_len)
+            swingOkBuy = np.full(n, True)
+            swingOkSell = np.full(n, True)
+            
+            if swingLen > 0:  # Only apply if filter is enabled
+                _lo = np.full(n, np.nan)
+                _hi = np.full(n, np.nan)
+                
+                for i in range(swingLen, n):
+                    _lo[i] = np.min(src[max(0, i-swingLen):i+1])
+                    _hi[i] = np.max(src[max(0, i-swingLen):i+1])
+                
+                for i in range(swingLen, n):
+                    swingOkBuy[i] = src[i] > _lo[i] * 1.01
+                    swingOkSell[i] = src[i] < _hi[i] * 0.99
+            
+            # 2-bar delay confirmation
+            delayOkBuy = np.full(n, True)
+            delayOkSell = np.full(n, True)
+            
+            if ut_delay_filter >= 1.0:  # Only apply if filter is enabled
+                for i in range(2, n):
+                    delayOkBuy[i] = barbuy[i-1] and barbuy[i-2]
+                    delayOkSell[i] = barsell[i-1] and barsell[i-2]
+            
+            # ZLSMA alignment filter
+            zlsmaAgreeBuy = np.full(n, True)
+            zlsmaAgreeSell = np.full(n, True)
+            
+            if ut_zlsma_filter >= 1.0:  # Only apply if filter is enabled
+                # Calculate ZLSMA
+                zlsma_length = 75
+                ema_fast_z = pine_ema(src, zlsma_length // 2)
+                ema_slow_z = pine_ema(src, zlsma_length)
+                
+                momentum_rate = np.full(n, 0.0)
+                for i in range(1, n):
+                    momentum_rate[i] = (ema_fast_z[i] - ema_slow_z[i]) / zlsma_length
+                
+                # Hull MA for ZLSMA
+                wma_period = int(np.sqrt(zlsma_length))
+                hull_ma = np.full(n, np.nan)
+                for i in range(wma_period, n):
+                    weights = np.arange(1, wma_period + 1)
+                    values_slice = src[i-wma_period+1:i+1]
+                    if len(values_slice) == wma_period:
+                        hull_ma[i] = np.average(values_slice, weights=weights)
+                
+                prediction = np.full(n, np.nan)
+                for i in range(n):
+                    if not np.isnan(hull_ma[i]):
+                        prediction[i] = hull_ma[i] + momentum_rate[i] * (zlsma_length / 4)
+                
+                zlsma = np.full(n, np.nan)
+                for i in range(n):
+                    if not np.isnan(prediction[i]) and not np.isnan(ema_fast_z[i]):
+                        zlsma[i] = prediction[i] * 0.4 + ema_fast_z[i] * 0.6
+                
+                for i in range(n):
+                    if not np.isnan(zlsma[i]):
+                        zlsmaAgreeBuy[i] = src[i] > zlsma[i]
+                        zlsmaAgreeSell[i] = src[i] < zlsma[i]
+            
+            # Final UT signals with all filters
+            if ut_delay_filter >= 1.0:  # With delay
+                flipUp = np.full(n, False)
+                flipDn = np.full(n, False)
+                for i in range(2, n):
+                    flipUp[i] = above[i-2] and barbuy[i-1] and barbuy[i-2]
+                    flipDn[i] = below[i-2] and barsell[i-1] and barsell[i-2]
+                
+                utBuy = flipUp & chgOk & swingOkBuy & delayOkBuy
+                utSell = flipDn & chgOk & swingOkSell & delayOkSell
+            else:  # Without delay
+                utBuy = above & chgOk & swingOkBuy
+                utSell = below & chgOk & swingOkSell
+            
+            # Confirmation: close must be on correct side of trailing stop
+            confirmRealBuy = src > xATRTrailingStop
+            confirmRealSell = src < xATRTrailingStop
+            
+            utBuy = utBuy & confirmRealBuy & zlsmaAgreeBuy
+            utSell = utSell & confirmRealSell & zlsmaAgreeSell
+            
+            buy_signal = utBuy
+            sell_signal = utSell
+            
+            # Store UT data for output
+            stock_data['ut_trailing_stop'] = xATRTrailingStop
+            stock_data['ut_atr'] = xATR
+            stock_data['ut_adaptive_key'] = adaptiveKey
+            stock_data['ema_line'] = xATRTrailingStop  # Reuse for display
+            stock_data['ema_signal_mode'] = 'UT Bot'
+            
+        # ============================================================================
+        # ORIGINAL OPTIMIZED RANGE FILTER
+        # ============================================================================
+        elif signal_method == 'Optimized Range Filter':
             ema_line = pine_ema(src, ema_length)
             
             # Basic signals (direct translation from Pine Script)
@@ -584,7 +774,10 @@ def get_multi_stock_signals(df, stock_col='stock', date_col='date', source_col='
                            sampling_period_slow=55, range_multiplier_slow=2.0,
                            sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
                            ema_length=10, ema_signal_mode='Confirmation',
-                           signal_method='Range Filter', signal_type='Both'):
+                           signal_method='Range Filter', signal_type='Both',
+                           ut_atr_period=7, ut_key=1.2, 
+                           ut_pct_filter=0.0, ut_swing_len=0,
+                           ut_delay_filter=0.0, ut_zlsma_filter=0.0):
     """Apply signals to multiple stocks based on selected method."""
     required_cols = [stock_col, date_col, source_col, 'high', 'low']
     missing_cols = [col for col in required_cols if col not in df.columns]
@@ -599,7 +792,10 @@ def get_multi_stock_signals(df, stock_col='stock', date_col='date', source_col='
             sampling_period_slow, range_multiplier_slow,
             sar_start, sar_increment, sar_maximum,
             ema_length, ema_signal_mode,
-            signal_method
+            signal_method,
+            ut_atr_period, ut_key, 
+            ut_pct_filter, ut_swing_len,
+            ut_delay_filter, ut_zlsma_filter
         )
         if signals.empty:
             return pd.DataFrame()
@@ -631,7 +827,10 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0,
                  sampling_period_slow=55, range_multiplier_slow=2.0,
                  sar_start=0.02, sar_increment=0.02, sar_maximum=0.2,
                  ema_length=10, ema_signal_mode='Confirmation',
-                 signal_method='Range Filter', signal_type='Both'):
+                 signal_method='Range Filter', signal_type='Both',
+                 ut_atr_period=7, ut_key=1.2, 
+                 ut_pct_filter=0.0, ut_swing_len=0,
+                 ut_delay_filter=0.0, ut_zlsma_filter=0.0):
     """Run the screener for the selected date, signal method, and type."""
     multi_stock_df = load_stock_data()
     if multi_stock_df.empty:
@@ -643,7 +842,10 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0,
         sampling_period_slow=sampling_period_slow, range_multiplier_slow=range_multiplier_slow,
         sar_start=sar_start, sar_increment=sar_increment, sar_maximum=sar_maximum,
         ema_length=ema_length, ema_signal_mode=ema_signal_mode,
-        signal_method=signal_method, signal_type=signal_type
+        signal_method=signal_method, signal_type=signal_type,
+        ut_atr_period=ut_atr_period, ut_key=ut_key,
+        ut_pct_filter=ut_pct_filter, ut_swing_len=ut_swing_len,
+        ut_delay_filter=ut_delay_filter, ut_zlsma_filter=ut_zlsma_filter
     )
     if signals.empty:
         return []
@@ -656,7 +858,8 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0,
         strength_val = row['upward'] if row['buy_signal'] else row['downward']
         strength = "Strong" if strength_val > 5 else "Medium" if strength_val > 2 else "Weak"
         signal = "BUY" if row['buy_signal'] else "SELL"
-        results.append({
+        
+        result_dict = {
             "Stock": row['stock'],
             "Price": float(row['close']),
             "Signal": signal,
@@ -671,7 +874,15 @@ def run_screener(selected_date, sampling_period=100, range_multiplier=3.0,
             "SAR_Value": float(row['sar_value']) if not np.isnan(row['sar_value']) else None,
             "EMA_Line": float(row['ema_line']) if not np.isnan(row['ema_line']) else None,
             "EMA_Mode": row['ema_signal_mode'] if row['ema_signal_mode'] != 'N/A' else None
-        })
+        }
+        
+        # Add UT Bot specific fields if applicable
+        if signal_method == 'New Optimized Range Filter':
+            result_dict["UT_Trailing_Stop"] = float(row['ut_trailing_stop']) if 'ut_trailing_stop' in row and not np.isnan(row['ut_trailing_stop']) else None
+            result_dict["UT_ATR"] = float(row['ut_atr']) if 'ut_atr' in row and not np.isnan(row['ut_atr']) else None
+            result_dict["UT_Adaptive_Key"] = float(row['ut_adaptive_key']) if 'ut_adaptive_key' in row and not np.isnan(row['ut_adaptive_key']) else None
+        
+        results.append(result_dict)
     return results
 
 # UI Components
@@ -770,7 +981,8 @@ def main():
 
     signal_method = st.sidebar.selectbox(
         "Signal Method", 
-        ["Range Filter", "Optimized Range Filter", "Range Filter + Twin Range Filter", 
+        ["Range Filter", "Optimized Range Filter", "New Optimized Range Filter",
+         "Range Filter + Twin Range Filter", 
          "Range Filter + Parabolic SAR", "Range Filter + Twin Range Filter + Parabolic SAR"]
     )
     signal_type = st.sidebar.selectbox("Signal Type", ["Buy", "Sell", "Both"])
@@ -783,8 +995,40 @@ def main():
     st.sidebar.info(f"Sampling Period: {sampling_period}")
     st.sidebar.info(f"Range Multiplier: {range_multiplier}")
 
-    # Optimized Range Filter parameters
-    if signal_method == 'Optimized Range Filter':
+    # Initialize default values
+    ema_length = 10
+    ema_signal_mode = 'Confirmation'
+    ut_atr_period = 7
+    ut_key = 1.2
+    ut_pct_filter = 0.0
+    ut_swing_len = 0
+    ut_delay_filter = 0.0
+    ut_zlsma_filter = 0.0
+
+    # New Optimized Range Filter (UT Bot) parameters
+    if signal_method == 'New Optimized Range Filter':
+        st.sidebar.subheader("UT Bot Parameters")
+        ut_atr_period = st.sidebar.slider("ATR Period", 1, 30, 7, help="ATR lookback period for trailing stop calculation")
+        ut_key = st.sidebar.slider("Key Multiplier (Sensitivity)", 0.5, 3.0, 1.2, 0.1, 
+                                    help="Base ATR multiplier. Higher = wider stops, fewer signals")
+        
+        st.sidebar.write("**Optional Filters:**")
+        ut_pct_filter = st.sidebar.slider("% Change Filter (0=OFF)", 0.0, 2.0, 0.05, 0.05,
+                                          help="Minimum % change required. 0 = disabled")
+        
+        ut_swing_len = st.sidebar.slider("Swing Filter Length (0=OFF)", 0, 20, 8, 
+                                         help="Swing structure lookback. 0 = disabled")
+        
+        ut_delay_filter = st.sidebar.slider("2-Bar Confirmation (0=OFF, 1=ON)", 0.0, 1.0, 0.0, 1.0,
+                                            help="1 = require 2-bar trend confirmation")
+        
+        ut_zlsma_filter = st.sidebar.slider("ZLSMA Filter (0=OFF, 1=ON)", 0.0, 1.0, 0.0, 1.0,
+                                            help="1 = require ZLSMA alignment")
+        
+        ema_signal_mode = 'UT Bot'  # Fixed mode
+    
+    # Original Optimized Range Filter parameters
+    elif signal_method == 'Optimized Range Filter':
         st.sidebar.subheader("EMA Enhancement")
         ema_length = st.sidebar.slider("EMA Length", 1, 50, 10)
         ema_signal_mode = st.sidebar.selectbox(
@@ -792,9 +1036,6 @@ def main():
             ["Confirmation", "Trigger", "Filter"],
             help="Confirmation: EMA confirms RF signals, Trigger: EMA crossover triggers signals, Filter: EMA filters RF signals"
         )
-    else:
-        ema_length = 10
-        ema_signal_mode = 'Confirmation'
 
     if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
         st.sidebar.subheader("Twin Range Filter")
@@ -833,7 +1074,24 @@ def main():
         st.info(f"📊 Signal Type: {signal_type}")
         st.info(f"**Range Filter:** Sampling Period: {sampling_period}, Range Multiplier: {range_multiplier}")
         
-        if signal_method == 'Optimized Range Filter':
+        if signal_method == 'New Optimized Range Filter':
+            st.info(f"**UT Bot:** ATR Period: {ut_atr_period}, Key: {ut_key}")
+            filters_active = []
+            if ut_pct_filter > 0:
+                filters_active.append(f"% Change: {ut_pct_filter}%")
+            if ut_swing_len > 0:
+                filters_active.append(f"Swing: {int(ut_swing_len)} bars")
+            if ut_delay_filter >= 1.0:
+                filters_active.append("2-Bar Confirm: ON")
+            if ut_zlsma_filter >= 1.0:
+                filters_active.append("ZLSMA Filter: ON")
+            
+            if filters_active:
+                st.info(f"**Filters:** {', '.join(filters_active)}")
+            else:
+                st.info("**Filters:** None (raw signals)")
+        
+        elif signal_method == 'Optimized Range Filter':
             st.info(f"**EMA Enhancement:** Length: {ema_length}, Mode: {ema_signal_mode}")
             
         if signal_method in ['Range Filter + Twin Range Filter', 'Range Filter + Twin Range Filter + Parabolic SAR']:
@@ -854,7 +1112,19 @@ def main():
             st.warning("No data loaded or available")
 
         st.write("**Signal Conditions:**")
-        if signal_method == 'Optimized Range Filter':
+        if signal_method == 'New Optimized Range Filter':
+            st.write("• **UT Bot:** Momentum-weighted ATR trailing system")
+            st.write("  - Adaptive key adjusts to momentum & volume")
+            st.write("  - Signals on trailing stop crossovers")
+            if ut_pct_filter > 0:
+                st.write(f"  - % Change filter: >{ut_pct_filter}% required")
+            if ut_swing_len > 0:
+                st.write(f"  - Swing filter: {int(ut_swing_len)}-bar structure")
+            if ut_delay_filter >= 1.0:
+                st.write("  - 2-bar confirmation: ON")
+            if ut_zlsma_filter >= 1.0:
+                st.write("  - ZLSMA alignment: ON")
+        elif signal_method == 'Optimized Range Filter':
             st.write("• **Range Filter:** Price breakout with EMA enhancement")
             st.write(f"• **EMA Mode - {ema_signal_mode}:**")
             if ema_signal_mode == "Confirmation":
@@ -881,7 +1151,10 @@ def main():
                         sampling_period_slow, range_multiplier_slow,
                         sar_start, sar_increment, sar_maximum,
                         ema_length, ema_signal_mode,
-                        signal_method, signal_type
+                        signal_method, signal_type,
+                        ut_atr_period, ut_key,
+                        ut_pct_filter, ut_swing_len,
+                        ut_delay_filter, ut_zlsma_filter
                     )
                     if screener_results:
                         st.success(f"✅ Found {len(screener_results)} {'signals' if signal_type == 'Both' else signal_type.lower() + ' signals'}!")
@@ -909,7 +1182,9 @@ def main():
                         base_cols = ['Stock', 'Price', 'Signal', 'Strength', 'Range_Filter', 'Upper_Band', 'Lower_Band']
                         display_cols = base_cols.copy()
                         
-                        if signal_method == 'Optimized Range Filter':
+                        if signal_method == 'New Optimized Range Filter':
+                            display_cols.extend(['UT_Trailing_Stop', 'UT_ATR', 'UT_Adaptive_Key'])
+                        elif signal_method == 'Optimized Range Filter':
                             display_cols.extend(['EMA_Line', 'EMA_Mode'])
                         elif 'Twin Range Filter' in signal_method:
                             display_cols.extend(['Range_Filter_Twin', 'Upper_Band_Twin', 'Lower_Band_Twin'])
@@ -923,7 +1198,7 @@ def main():
                         # Round numerical columns
                         numeric_cols = ['Price', 'Range_Filter', 'Upper_Band', 'Lower_Band', 
                                       'Range_Filter_Twin', 'Upper_Band_Twin', 'Lower_Band_Twin', 
-                                      'SAR_Value', 'EMA_Line']
+                                      'SAR_Value', 'EMA_Line', 'UT_Trailing_Stop', 'UT_ATR', 'UT_Adaptive_Key']
                         for col in numeric_cols:
                             if col in display_df.columns:
                                 display_df[col] = pd.to_numeric(display_df[col], errors='coerce').round(2)
@@ -953,6 +1228,8 @@ def main():
                         st.warning(f"No {signal_type.lower() if signal_type != 'Both' else 'signals'} found for the selected date.")
                 except Exception as e:
                     st.error(f"Error running screener: {e}")
+                    import traceback
+                    st.error(traceback.format_exc())
 
     st.markdown("---")
     st.markdown("""
@@ -967,6 +1244,7 @@ def main():
     **Signal Methods:**
     - **Range Filter:** Basic trend-following breakout signals
     - **Optimized Range Filter:** Range Filter enhanced with EMA confirmation/trigger/filter modes
+    - **New Optimized Range Filter:** UT Bot - Momentum-weighted ATR trailing system with adaptive keys
     - **Twin Range Filter:** Combines fast and slow range filters for confirmation
     - **Parabolic SAR:** Confirms signals with trend direction
     - **Combined:** Requires agreement across selected indicators
@@ -975,6 +1253,14 @@ def main():
     - **Confirmation:** EMA must confirm Range Filter signals with trend direction
     - **Trigger:** EMA crossovers trigger signals when Range Filter agrees
     - **Filter:** EMA position filters Range Filter signals
+    
+    **UT Bot Filters (New Optimized Range Filter):**
+    - **% Change Filter:** Minimum percentage change threshold (dynamic based on ATR)
+    - **Swing Filter:** Requires price breakout of N-bar swing high/low structure
+    - **2-Bar Confirmation:** Requires 2 consecutive bars confirming direction
+    - **ZLSMA Filter:** Requires price alignment with Zero-Lag SMA (buy > ZLSMA, sell < ZLSMA)
+    - **Adaptive Key:** Auto-adjusts sensitivity based on momentum and volume ratio
+    - **Volume Gate:** Signals require volume ratio > 0.8 for validation
     """)
 
 if __name__ == "__main__":
